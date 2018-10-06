@@ -17,14 +17,25 @@
       crossorigin="anonymous" />
     <link rel="stylesheet" href="style.css" />
 
+    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/solid.js"
+      integrity="sha384-GJiigN/ef2B3HMj0haY+eMmG4EIIrhWgGJ2Rv0IaWnNdWdbWPr1sRLkGz7xfjOFw"
+      crossorigin="anonymous"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/fontawesome.js"
+      integrity="sha384-2OfHGv4zQZxcNK+oL8TR9pA+ADXtUODqGpIRy1zOgioC4X3+2vbOAp5Qv7uHM4Z8"
+      crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.1/clipboard.min.js"
+      integrity="sha256-hIvIxeqhGZF+VVeM55k0mJvWpQ6gTkWk3Emc+NmowYA="
+      crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"
       integrity="sha256-nRoO8HoupfqozUr7YKBRgHXmdx40Hl/04OSBzv7e7L8="
       crossorigin="anonymous"></script>
+    <script src="html2canvas.min.js"></script>
     <script src="bingo.js"></script>
   </head>
 
   <body>
     <script>
+      const clipboard = new ClipboardJS(".copy-button");
       const hash = window.location.hash;
       let initial;
       if (hash) {
@@ -38,6 +49,24 @@
       });
       app.ports.decompress.subscribe(function(data) {
         app.ports.decompressed.send(LZString.decompressFromEncodedURIComponent(data));
+      });
+      app.ports.save.subscribe(function(name) {
+        html2canvas(
+          document.querySelector(".bingo-card"),
+          { scale: 3 }
+        ).then(function(canvas) {
+          const url = canvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          if (typeof link.download === "string") {
+            link.href = url;
+            link.download = name + ".png"
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } else {
+            window.open(url, "_blank");
+          }
+        });
       });
     </script>
   </body>

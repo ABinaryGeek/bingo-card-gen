@@ -33,6 +33,9 @@ port decompressed : (String -> msg) -> Sub msg
 port compressed : (String -> msg) -> Sub msg
 
 
+port save : String -> Cmd msg
+
+
 type Page
     = E Editor
     | V Viewer
@@ -126,6 +129,9 @@ update msg model =
                             case msgEditor of
                                 Editor.UpdateCode code ->
                                     [ codeUrl code |> Navigation.pushUrl model.key ]
+
+                                Editor.Save ->
+                                    [ save editor.card.name ]
 
                                 _ ->
                                     []

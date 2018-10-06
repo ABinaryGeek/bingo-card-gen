@@ -8,3 +8,4 @@ import Html5.DragDrop as DragDrop
 type Msg
     = ViewerMsg Viewer.Msg
     | EditorMsg Editor.Msg
+    | Save

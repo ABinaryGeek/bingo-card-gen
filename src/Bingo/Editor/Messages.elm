@@ -8,13 +8,15 @@ import Html5.DragDrop as DragDrop
 
 type Msg
     = AddNewValue
+    | AddGivenValue String
     | UpdateNewValueField String
     | Resize String
     | ChangeName String
     | ToggleFreeSquare
-    | DragDropMsg (DragDrop.Msg Value DropTarget)
-    | Randomise
+    | Randomise { includeUnused : Bool }
     | Reorder (List Value)
     | Load Card
     | UpdateCode String
+    | Save
     | NoOp
+    | DragDropMsg (DragDrop.Msg Value DropTarget)

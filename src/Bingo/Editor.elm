@@ -11,6 +11,7 @@ import Bingo.Card.Save as Card
 import Bingo.Editor.Messages exposing (..)
 import Bingo.Editor.Model exposing (..)
 import Bingo.Editor.ValueList as ValueList
+import Bingo.Icon as Icon
 import Bingo.Model exposing (Value)
 import Bingo.Utils as Utils
 import Browser.Dom as Dom
@@ -43,6 +44,9 @@ update msg model =
             , Task.attempt (\_ -> NoOp) (Dom.focus "add-value-field")
             )
 
+        AddGivenValue givenValue ->
+            ( { model | card = Card.add givenValue model.card }, Cmd.none )
+
         UpdateNewValueField newValue ->
             ( { model | newValueInput = newValue }, Cmd.none )
 
@@ -68,8 +72,24 @@ update msg model =
         ToggleFreeSquare ->
             ( { model | card = Card.toggleFreeSquare model.card }, Cmd.none )
 
-        Randomise ->
-            ( model, Random.generate Reorder (Random.List.shuffle model.card.values) )
+        Randomise { includeUnused } ->
+            if includeUnused then
+                ( model, Random.generate Reorder (Random.List.shuffle model.card.values) )
+
+            else
+                let
+                    amount =
+                        Layout.amountOfSquares model.card.layout
+
+                    ( used, unused ) =
+                        Utils.split amount model.card.values
+                in
+                ( model
+                , Random.generate Reorder
+                    (Random.List.shuffle used
+                        |> Random.map (\shuffled -> shuffled ++ unused)
+                    )
+                )
 
         Reorder values ->
             ( { model | card = Card.setValues values model.card }, Cmd.none )
@@ -105,6 +125,9 @@ update msg model =
         UpdateCode code ->
             ( { model | code = Just code }, Cmd.none )
 
+        Save ->
+            ( model, Cmd.none )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -131,7 +154,8 @@ view model =
     in
     Html.div [ Attr.class "editor" ]
         [ controls model.code model.card
-        , ValueList.view attributes model.card model.newValueInput (drag model.dragDrop)
+        , ValueList.viewControls model.card model.newValueInput
+        , ValueList.view attributes model.card (drag model.dragDrop)
         , Html.div [ Attr.class "container" ] [ Card.view attributes model.card ]
         ]
 
@@ -172,8 +196,7 @@ controls code card =
                 |> Maybe.map
                     (\c ->
                         [ linkView c
-
-                        --, linkEdit c
+                        , saveImage
                         ]
                     )
                 |> Maybe.withDefault []
@@ -189,13 +212,33 @@ linkEdit code =
 linkView : String -> Html Msg
 linkView code =
     Html.div [ Attr.class "change-name pure-control-group" ]
-        [ Html.label [ Attr.for "view-field" ] [ Html.text "Edit Link: " ]
-        , Html.input
-            [ Attr.id "view-field"
-            , Attr.value ("https://abinarygeek.github.io/bingo-card-gen/#" ++ code)
-            , Attr.readonly True
+        [ Html.label [ Attr.for "view-field" ] [ Html.text "Link To Edit: " ]
+        , Html.div [ Attr.class "form-row" ]
+            [ Html.input
+                [ Attr.id "view-field"
+                , Attr.value ("https://abinarygeek.github.io/bingo-card-gen/#" ++ code)
+                , Attr.readonly True
+                ]
+                []
+            , Html.button
+                [ Attr.class "copy-button pure-button"
+                , Attr.attribute "data-clipboard-target" "#view-field"
+                ]
+                [ Icon.copy ]
             ]
-            []
+        ]
+
+
+saveImage : Html Msg
+saveImage =
+    Html.div [ Attr.class "pure-control-group" ]
+        [ Html.label [ Attr.for "save-button" ] [ Html.text "Save " ]
+        , Html.button
+            [ Html.onClick Save
+            , Attr.id "save-button"
+            , Attr.class "pure-button"
+            ]
+            [ Icon.image, Html.text " As Image" ]
         ]
 
 
