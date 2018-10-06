@@ -4372,107 +4372,6 @@ function _Time_getZoneName()
 		callback(_Scheduler_succeed(name));
 	});
 }
-
-
-// CREATE
-
-var _Regex_never = /.^/;
-
-var _Regex_fromStringWith = F2(function(options, string)
-{
-	var flags = 'g';
-	if (options.multiline) { flags += 'm'; }
-	if (options.caseInsensitive) { flags += 'i'; }
-
-	try
-	{
-		return elm$core$Maybe$Just(new RegExp(string, flags));
-	}
-	catch(error)
-	{
-		return elm$core$Maybe$Nothing;
-	}
-});
-
-
-// USE
-
-var _Regex_contains = F2(function(re, string)
-{
-	return string.match(re) !== null;
-});
-
-
-var _Regex_findAtMost = F3(function(n, re, str)
-{
-	var out = [];
-	var number = 0;
-	var string = str;
-	var lastIndex = re.lastIndex;
-	var prevLastIndex = -1;
-	var result;
-	while (number++ < n && (result = re.exec(string)))
-	{
-		if (prevLastIndex == re.lastIndex) break;
-		var i = result.length - 1;
-		var subs = new Array(i);
-		while (i > 0)
-		{
-			var submatch = result[i];
-			subs[--i] = submatch
-				? elm$core$Maybe$Just(submatch)
-				: elm$core$Maybe$Nothing;
-		}
-		out.push(A4(elm$regex$Regex$Match, result[0], result.index, number, _List_fromArray(subs)));
-		prevLastIndex = re.lastIndex;
-	}
-	re.lastIndex = lastIndex;
-	return _List_fromArray(out);
-});
-
-
-var _Regex_replaceAtMost = F4(function(n, re, replacer, string)
-{
-	var count = 0;
-	function jsReplacer(match)
-	{
-		if (count++ >= n)
-		{
-			return match;
-		}
-		var i = arguments.length - 3;
-		var submatches = new Array(i);
-		while (i > 0)
-		{
-			var submatch = arguments[i];
-			submatches[--i] = submatch
-				? elm$core$Maybe$Just(submatch)
-				: elm$core$Maybe$Nothing;
-		}
-		return replacer(A4(elm$regex$Regex$Match, match, arguments[arguments.length - 2], count, _List_fromArray(submatches)));
-	}
-	return string.replace(re, jsReplacer);
-});
-
-var _Regex_splitAtMost = F3(function(n, re, str)
-{
-	var string = str;
-	var out = [];
-	var start = re.lastIndex;
-	var restoreLastIndex = re.lastIndex;
-	while (n--)
-	{
-		var result = re.exec(string);
-		if (!result) break;
-		out.push(string.slice(start, result.index));
-		start = re.lastIndex;
-	}
-	out.push(string.slice(start));
-	re.lastIndex = restoreLastIndex;
-	return _List_fromArray(out);
-});
-
-var _Regex_infinity = Infinity;
 var elm$core$Basics$True = {$: 'True'};
 var elm$core$Basics$EQ = {$: 'EQ'};
 var elm$core$Basics$LT = {$: 'LT'};
@@ -4561,20 +4460,17 @@ var author$project$Bingo$Card$init = {
 };
 var norpan$elm_html5_drag_drop$Html5$DragDrop$NotDragging = {$: 'NotDragging'};
 var norpan$elm_html5_drag_drop$Html5$DragDrop$init = norpan$elm_html5_drag_drop$Html5$DragDrop$NotDragging;
-var author$project$Bingo$Editor$init = function (card) {
-	return {card: card, dragDrop: norpan$elm_html5_drag_drop$Html5$DragDrop$init, newValueInput: ''};
-};
+var author$project$Bingo$Editor$init = F2(
+	function (code, card) {
+		return {card: card, code: code, dragDrop: norpan$elm_html5_drag_drop$Html5$DragDrop$init, newValueInput: ''};
+	});
 var author$project$Main$E = function (a) {
 	return {$: 'E', a: a};
 };
-var elm$core$Basics$False = {$: 'False'};
-var elm$core$Result$isOk = function (result) {
-	if (result.$ === 'Ok') {
-		return true;
-	} else {
-		return false;
-	}
-};
+var author$project$Bingo$Card$Layout$Layout = F2(
+	function (size, free) {
+		return {free: free, size: size};
+	});
 var elm$core$Array$branchFactor = 32;
 var elm$core$Array$Array_elm_builtin = F4(
 	function (a, b, c, d) {
@@ -4704,6 +4600,7 @@ var elm$core$Array$builderToArray = F2(
 				builder.tail);
 		}
 	});
+var elm$core$Basics$False = {$: 'False'};
 var elm$core$Basics$idiv = _Basics_idiv;
 var elm$core$Basics$lt = _Utils_lt;
 var elm$core$Elm$JsArray$initialize = _JsArray_initialize;
@@ -4755,6 +4652,13 @@ var elm$core$Result$Err = function (a) {
 };
 var elm$core$Result$Ok = function (a) {
 	return {$: 'Ok', a: a};
+};
+var elm$core$Result$isOk = function (result) {
+	if (result.$ === 'Ok') {
+		return true;
+	} else {
+		return false;
+	}
 };
 var elm$json$Json$Decode$Failure = F2(
 	function (a, b) {
@@ -4961,31 +4865,224 @@ var elm$json$Json$Decode$errorToStringHelp = F2(
 			}
 		}
 	});
+var elm$json$Json$Decode$bool = _Json_decodeBool;
+var elm$json$Json$Decode$field = _Json_decodeField;
+var elm$json$Json$Decode$int = _Json_decodeInt;
+var elm$json$Json$Decode$map2 = _Json_map2;
+var author$project$Bingo$Card$Load$decodeLayout = A3(
+	elm$json$Json$Decode$map2,
+	author$project$Bingo$Card$Layout$Layout,
+	A2(elm$json$Json$Decode$field, 'size', elm$json$Json$Decode$int),
+	A2(elm$json$Json$Decode$field, 'free', elm$json$Json$Decode$bool));
+var elm$json$Json$Decode$string = _Json_decodeString;
+var author$project$Bingo$Card$Load$decodeValue = elm$json$Json$Decode$string;
+var author$project$Bingo$Card$Model$Card = F3(
+	function (name, values, layout) {
+		return {layout: layout, name: name, values: values};
+	});
+var elm$json$Json$Decode$list = _Json_decodeList;
+var elm$json$Json$Decode$map3 = _Json_map3;
+var author$project$Bingo$Card$Load$decodeCard = A4(
+	elm$json$Json$Decode$map3,
+	author$project$Bingo$Card$Model$Card,
+	A2(elm$json$Json$Decode$field, 'name', elm$json$Json$Decode$string),
+	A2(
+		elm$json$Json$Decode$field,
+		'values',
+		elm$json$Json$Decode$list(author$project$Bingo$Card$Load$decodeValue)),
+	A2(elm$json$Json$Decode$field, 'layout', author$project$Bingo$Card$Load$decodeLayout));
+var elm$core$Basics$composeR = F3(
+	function (f, g, x) {
+		return g(
+			f(x));
+	});
+var elm$core$Result$mapError = F2(
+	function (f, result) {
+		if (result.$ === 'Ok') {
+			var v = result.a;
+			return elm$core$Result$Ok(v);
+		} else {
+			var e = result.a;
+			return elm$core$Result$Err(
+				f(e));
+		}
+	});
+var elm$json$Json$Decode$decodeString = _Json_runOnString;
+var author$project$Bingo$Card$Load$load = function (card) {
+	return A3(
+		elm$core$Basics$composeR,
+		elm$json$Json$Decode$decodeString(author$project$Bingo$Card$Load$decodeCard),
+		elm$core$Result$mapError(elm$json$Json$Decode$errorToString),
+		card);
+};
+var elm$core$Result$toMaybe = function (result) {
+	if (result.$ === 'Ok') {
+		var v = result.a;
+		return elm$core$Maybe$Just(v);
+	} else {
+		return elm$core$Maybe$Nothing;
+	}
+};
+var author$project$Main$loadCard = function (card) {
+	return elm$core$Result$toMaybe(
+		author$project$Bingo$Card$Load$load(card));
+};
+var elm$core$Maybe$andThen = F2(
+	function (callback, maybeValue) {
+		if (maybeValue.$ === 'Just') {
+			var value = maybeValue.a;
+			return callback(value);
+		} else {
+			return elm$core$Maybe$Nothing;
+		}
+	});
+var elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Main$init = F3(
 	function (flags, url, key) {
+		var card = A2(
+			elm$core$Maybe$withDefault,
+			author$project$Bingo$Card$init,
+			A2(elm$core$Maybe$andThen, author$project$Main$loadCard, flags.initial));
 		return _Utils_Tuple2(
 			{
 				key: key,
 				page: author$project$Main$E(
-					author$project$Bingo$Editor$init(author$project$Bingo$Card$init))
+					A2(author$project$Bingo$Editor$init, url.fragment, card))
 			},
 			elm$core$Platform$Cmd$none);
 	});
-var author$project$Main$Edit = function (a) {
-	return {$: 'Edit', a: a};
+var author$project$Main$Decompress = function (a) {
+	return {$: 'Decompress', a: a};
 };
+var author$project$Main$NoOp = {$: 'NoOp'};
+var elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return elm$core$Maybe$Nothing;
+		}
+	});
 var author$project$Main$onUrlChange = function (url) {
-	return author$project$Main$Edit(author$project$Bingo$Card$init);
+	return A2(
+		elm$core$Maybe$withDefault,
+		author$project$Main$NoOp,
+		A2(
+			elm$core$Maybe$map,
+			function (value) {
+				return author$project$Main$Decompress(value);
+			},
+			url.fragment));
 };
 var author$project$Main$onUrlRequest = function (urlRequest) {
-	return author$project$Main$Edit(author$project$Bingo$Card$init);
+	return author$project$Main$NoOp;
 };
+var author$project$Bingo$Editor$Messages$Load = function (a) {
+	return {$: 'Load', a: a};
+};
+var author$project$Bingo$Editor$Messages$UpdateCode = function (a) {
+	return {$: 'UpdateCode', a: a};
+};
+var author$project$Main$EditMsg = function (a) {
+	return {$: 'EditMsg', a: a};
+};
+var author$project$Main$compressed = _Platform_incomingPort('compressed', elm$json$Json$Decode$string);
+var author$project$Main$decompressed = _Platform_incomingPort('decompressed', elm$json$Json$Decode$string);
+var elm$core$Basics$composeL = F3(
+	function (g, f, x) {
+		return g(
+			f(x));
+	});
 var elm$core$Platform$Sub$batch = _Platform_batch;
-var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
 var author$project$Main$subscriptions = function (model) {
-	return elm$core$Platform$Sub$none;
+	return elm$core$Platform$Sub$batch(
+		_List_fromArray(
+			[
+				author$project$Main$compressed(
+				A2(elm$core$Basics$composeL, author$project$Main$EditMsg, author$project$Bingo$Editor$Messages$UpdateCode)),
+				author$project$Main$decompressed(
+				function (raw) {
+					return author$project$Main$EditMsg(
+						author$project$Bingo$Editor$Messages$Load(
+							A2(
+								elm$core$Maybe$withDefault,
+								author$project$Bingo$Card$init,
+								author$project$Main$loadCard(raw))));
+				})
+			]));
+};
+var elm$json$Json$Encode$bool = _Json_wrap;
+var elm$json$Json$Encode$int = _Json_wrap;
+var elm$json$Json$Encode$object = function (pairs) {
+	return _Json_wrap(
+		A3(
+			elm$core$List$foldl,
+			F2(
+				function (_n0, obj) {
+					var k = _n0.a;
+					var v = _n0.b;
+					return A3(_Json_addField, k, v, obj);
+				}),
+			_Json_emptyObject(_Utils_Tuple0),
+			pairs));
+};
+var author$project$Bingo$Card$Save$encodeLayout = function (layout) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'size',
+				elm$json$Json$Encode$int(layout.size)),
+				_Utils_Tuple2(
+				'free',
+				elm$json$Json$Encode$bool(layout.free))
+			]));
+};
+var elm$json$Json$Encode$string = _Json_wrap;
+var author$project$Bingo$Card$Save$encodeValue = function (value) {
+	return elm$json$Json$Encode$string(value);
+};
+var elm$json$Json$Encode$list = F2(
+	function (func, entries) {
+		return _Json_wrap(
+			A3(
+				elm$core$List$foldl,
+				_Json_addEntry(func),
+				_Json_emptyArray(_Utils_Tuple0),
+				entries));
+	});
+var author$project$Bingo$Card$Save$encodeCard = function (card) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'name',
+				elm$json$Json$Encode$string(card.name)),
+				_Utils_Tuple2(
+				'values',
+				A2(elm$json$Json$Encode$list, author$project$Bingo$Card$Save$encodeValue, card.values)),
+				_Utils_Tuple2(
+				'layout',
+				author$project$Bingo$Card$Save$encodeLayout(card.layout))
+			]));
+};
+var author$project$Bingo$Card$Save$save = function (card) {
+	return A2(
+		elm$json$Json$Encode$encode,
+		0,
+		author$project$Bingo$Card$Save$encodeCard(card));
 };
 var elm$core$List$any = F2(
 	function (isOkay, list) {
@@ -5309,7 +5406,6 @@ var elm$core$Task$perform = F2(
 				A2(elm$core$Task$map, toMessage, task)));
 	});
 var elm$json$Json$Decode$map = _Json_map1;
-var elm$json$Json$Decode$map2 = _Json_map2;
 var elm$json$Json$Decode$succeed = _Json_succeed;
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	switch (handler.$) {
@@ -5450,11 +5546,6 @@ var elm$url$Url$fromString = function (str) {
 		A2(elm$core$String$dropLeft, 8, str)) : elm$core$Maybe$Nothing);
 };
 var elm$browser$Browser$Dom$focus = _Browser_call('focus');
-var elm$core$Basics$composeL = F3(
-	function (g, f, x) {
-		return g(
-			f(x));
-	});
 var elm$core$Task$onError = _Scheduler_onError;
 var elm$core$Task$attempt = F2(
 	function (resultToMessage, task) {
@@ -6090,80 +6181,154 @@ var author$project$Bingo$Editor$update = F2(
 						model,
 						{card: card, dragDrop: dragDrop}),
 					elm$core$Platform$Cmd$none);
+			case 'Load':
+				var card = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{card: card}),
+					elm$core$Platform$Cmd$none);
+			case 'UpdateCode':
+				var code = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							code: elm$core$Maybe$Just(code)
+						}),
+					elm$core$Platform$Cmd$none);
 			default:
 				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
 	});
-var author$project$Bingo$Viewer$init = function (card) {
-	return {card: card};
-};
 var author$project$Bingo$Viewer$update = F2(
 	function (msg, model) {
 		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 	});
-var author$project$Main$EditMsg = function (a) {
-	return {$: 'EditMsg', a: a};
-};
 var author$project$Main$V = function (a) {
 	return {$: 'V', a: a};
 };
 var author$project$Main$ViewMsg = function (a) {
 	return {$: 'ViewMsg', a: a};
 };
+var elm$url$Url$Builder$Relative = {$: 'Relative'};
+var elm$url$Url$Builder$rootToPrePath = function (root) {
+	switch (root.$) {
+		case 'Absolute':
+			return '/';
+		case 'Relative':
+			return '';
+		default:
+			var prePath = root.a;
+			return prePath + '/';
+	}
+};
+var elm$url$Url$Builder$toQueryPair = function (_n0) {
+	var key = _n0.a;
+	var value = _n0.b;
+	return key + ('=' + value);
+};
+var elm$url$Url$Builder$toQuery = function (parameters) {
+	if (!parameters.b) {
+		return '';
+	} else {
+		return '?' + A2(
+			elm$core$String$join,
+			'&',
+			A2(elm$core$List$map, elm$url$Url$Builder$toQueryPair, parameters));
+	}
+};
+var elm$url$Url$Builder$custom = F4(
+	function (root, pathSegments, parameters, maybeFragment) {
+		var fragmentless = _Utils_ap(
+			elm$url$Url$Builder$rootToPrePath(root),
+			_Utils_ap(
+				A2(elm$core$String$join, '/', pathSegments),
+				elm$url$Url$Builder$toQuery(parameters)));
+		if (maybeFragment.$ === 'Nothing') {
+			return fragmentless;
+		} else {
+			var fragment = maybeFragment.a;
+			return fragmentless + ('#' + fragment);
+		}
+	});
+var author$project$Main$codeUrl = function (code) {
+	return A4(
+		elm$url$Url$Builder$custom,
+		elm$url$Url$Builder$Relative,
+		_List_Nil,
+		_List_Nil,
+		elm$core$Maybe$Just(code));
+};
+var author$project$Main$compress = _Platform_outgoingPort('compress', elm$json$Json$Encode$string);
+var author$project$Main$decompress = _Platform_outgoingPort('decompress', elm$json$Json$Encode$string);
+var elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
+var elm$core$List$concat = function (lists) {
+	return A3(elm$core$List$foldr, elm$core$List$append, _List_Nil, lists);
+};
 var elm$core$Platform$Cmd$map = _Platform_map;
 var author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
-			case 'Edit':
-				var card = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							page: author$project$Main$E(
-								author$project$Bingo$Editor$init(card))
-						}),
-					elm$core$Platform$Cmd$none);
-			case 'View':
-				var card = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							page: author$project$Main$V(
-								author$project$Bingo$Viewer$init(card))
-						}),
-					elm$core$Platform$Cmd$none);
 			case 'EditMsg':
 				var msgEditor = msg.a;
 				var _n1 = model.page;
 				if (_n1.$ === 'E') {
 					var editor = _n1.a;
+					var changeUrl = function () {
+						if (msgEditor.$ === 'UpdateCode') {
+							var code = msgEditor.a;
+							return _List_fromArray(
+								[
+									A2(
+									elm$browser$Browser$Navigation$pushUrl,
+									model.key,
+									author$project$Main$codeUrl(code))
+								]);
+						} else {
+							return _List_Nil;
+						}
+					}();
 					var _n2 = A2(author$project$Bingo$Editor$update, msgEditor, editor);
 					var newEditor = _n2.a;
 					var editorMsg = _n2.b;
+					var updateCode = (!_Utils_eq(newEditor.card, editor.card)) ? _List_fromArray(
+						[
+							author$project$Main$compress(
+							author$project$Bingo$Card$Save$save(newEditor.card))
+						]) : _List_Nil;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
 							{
 								page: author$project$Main$E(newEditor)
 							}),
-						A2(elm$core$Platform$Cmd$map, author$project$Main$EditMsg, editorMsg));
+						elm$core$Platform$Cmd$batch(
+							elm$core$List$concat(
+								_List_fromArray(
+									[
+										_List_fromArray(
+										[
+											A2(elm$core$Platform$Cmd$map, author$project$Main$EditMsg, editorMsg)
+										]),
+										updateCode,
+										changeUrl
+									]))));
 				} else {
 					var viewer = _n1.a;
 					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				}
-			default:
+			case 'ViewMsg':
 				var msgViewer = msg.a;
-				var _n3 = model.page;
-				if (_n3.$ === 'E') {
-					var editor = _n3.a;
+				var _n4 = model.page;
+				if (_n4.$ === 'E') {
+					var editor = _n4.a;
 					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				} else {
-					var viewer = _n3.a;
-					var _n4 = A2(author$project$Bingo$Viewer$update, msgViewer, viewer);
-					var newViewer = _n4.a;
-					var viewerMsg = _n4.b;
+					var viewer = _n4.a;
+					var _n5 = A2(author$project$Bingo$Viewer$update, msgViewer, viewer);
+					var newViewer = _n5.a;
+					var viewerMsg = _n5.b;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -6172,6 +6337,18 @@ var author$project$Main$update = F2(
 							}),
 						A2(elm$core$Platform$Cmd$map, author$project$Main$ViewMsg, viewerMsg));
 				}
+			case 'Compress':
+				var raw = msg.a;
+				return _Utils_Tuple2(
+					model,
+					author$project$Main$compress(raw));
+			case 'Decompress':
+				var compact = msg.a;
+				return _Utils_Tuple2(
+					model,
+					author$project$Main$decompress(compact));
+			default:
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
 	});
 var author$project$Bingo$Card$squareMap = F2(
@@ -6198,7 +6375,6 @@ var elm$html$Html$li = _VirtualDom_node('li');
 var elm$html$Html$span = _VirtualDom_node('span');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
-var elm$json$Json$Encode$string = _Json_wrap;
 var elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -6256,9 +6432,6 @@ var author$project$Bingo$Utils$split = F2(
 		var after = A2(elm$core$List$drop, amount, list);
 		return _Utils_Tuple2(before, after);
 	});
-var elm$core$List$concat = function (lists) {
-	return A3(elm$core$List$foldr, elm$core$List$append, _List_Nil, lists);
-};
 var elm$core$List$repeatHelp = F3(
 	function (result, n, value) {
 		repeatHelp:
@@ -6403,12 +6576,10 @@ var elm$html$Html$Events$stopPropagationOn = F2(
 			event,
 			elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
 	});
-var elm$json$Json$Decode$field = _Json_decodeField;
 var elm$json$Json$Decode$at = F2(
 	function (fields, decoder) {
 		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
 	});
-var elm$json$Json$Decode$string = _Json_decodeString;
 var elm$html$Html$Events$targetValue = A2(
 	elm$json$Json$Decode$at,
 	_List_fromArray(
@@ -6506,7 +6677,6 @@ var author$project$Bingo$Editor$changeSizeControl = function (layout) {
 			]));
 };
 var author$project$Bingo$Editor$Messages$ToggleFreeSquare = {$: 'ToggleFreeSquare'};
-var elm$json$Json$Encode$bool = _Json_wrap;
 var elm$html$Html$Attributes$boolProperty = F2(
 	function (key, bool) {
 		return A2(
@@ -6566,346 +6736,8 @@ var author$project$Bingo$Editor$freeSquareControl = function (layout) {
 				_List_Nil)
 			]));
 };
-var elm$core$Basics$composeR = F3(
-	function (f, g, x) {
-		return g(
-			f(x));
-	});
-var elm$core$Result$map = F2(
-	function (func, ra) {
-		if (ra.$ === 'Ok') {
-			var a = ra.a;
-			return elm$core$Result$Ok(
-				func(a));
-		} else {
-			var e = ra.a;
-			return elm$core$Result$Err(e);
-		}
-	});
-var elm$regex$Regex$Match = F4(
-	function (match, index, number, submatches) {
-		return {index: index, match: match, number: number, submatches: submatches};
-	});
-var elm$regex$Regex$replace = _Regex_replaceAtMost(_Regex_infinity);
-var elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
-var elm$regex$Regex$fromStringWith = _Regex_fromStringWith;
-var elm$regex$Regex$fromString = function (string) {
-	return A2(
-		elm$regex$Regex$fromStringWith,
-		{caseInsensitive: false, multiline: false},
-		string);
-};
-var elm$regex$Regex$never = _Regex_never;
-var prozacchiwawa$elm_urlbase64$UrlBase64$replaceForUrl = A2(
-	elm$core$Maybe$withDefault,
-	elm$regex$Regex$never,
-	elm$regex$Regex$fromString('[\\+/=]'));
-var prozacchiwawa$elm_urlbase64$UrlBase64$encode = F2(
-	function (enc, t) {
-		var replaceChar = function (rematch) {
-			var _n0 = rematch.match;
-			switch (_n0) {
-				case '+':
-					return '-';
-				case '/':
-					return '_';
-				default:
-					return '';
-			}
-		};
-		return A2(
-			elm$core$Result$map,
-			A2(elm$regex$Regex$replace, prozacchiwawa$elm_urlbase64$UrlBase64$replaceForUrl, replaceChar),
-			enc(t));
-	});
-var elm$core$String$foldl = _String_foldl;
-var elm$core$Basics$ge = _Utils_ge;
-var elm$core$Bitwise$or = _Bitwise_or;
-var elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
-var truqu$elm_base64$Base64$Encode$intToBase64 = function (i) {
-	switch (i) {
-		case 0:
-			return 'A';
-		case 1:
-			return 'B';
-		case 2:
-			return 'C';
-		case 3:
-			return 'D';
-		case 4:
-			return 'E';
-		case 5:
-			return 'F';
-		case 6:
-			return 'G';
-		case 7:
-			return 'H';
-		case 8:
-			return 'I';
-		case 9:
-			return 'J';
-		case 10:
-			return 'K';
-		case 11:
-			return 'L';
-		case 12:
-			return 'M';
-		case 13:
-			return 'N';
-		case 14:
-			return 'O';
-		case 15:
-			return 'P';
-		case 16:
-			return 'Q';
-		case 17:
-			return 'R';
-		case 18:
-			return 'S';
-		case 19:
-			return 'T';
-		case 20:
-			return 'U';
-		case 21:
-			return 'V';
-		case 22:
-			return 'W';
-		case 23:
-			return 'X';
-		case 24:
-			return 'Y';
-		case 25:
-			return 'Z';
-		case 26:
-			return 'a';
-		case 27:
-			return 'b';
-		case 28:
-			return 'c';
-		case 29:
-			return 'd';
-		case 30:
-			return 'e';
-		case 31:
-			return 'f';
-		case 32:
-			return 'g';
-		case 33:
-			return 'h';
-		case 34:
-			return 'i';
-		case 35:
-			return 'j';
-		case 36:
-			return 'k';
-		case 37:
-			return 'l';
-		case 38:
-			return 'm';
-		case 39:
-			return 'n';
-		case 40:
-			return 'o';
-		case 41:
-			return 'p';
-		case 42:
-			return 'q';
-		case 43:
-			return 'r';
-		case 44:
-			return 's';
-		case 45:
-			return 't';
-		case 46:
-			return 'u';
-		case 47:
-			return 'v';
-		case 48:
-			return 'w';
-		case 49:
-			return 'x';
-		case 50:
-			return 'y';
-		case 51:
-			return 'z';
-		case 52:
-			return '0';
-		case 53:
-			return '1';
-		case 54:
-			return '2';
-		case 55:
-			return '3';
-		case 56:
-			return '4';
-		case 57:
-			return '5';
-		case 58:
-			return '6';
-		case 59:
-			return '7';
-		case 60:
-			return '8';
-		case 61:
-			return '9';
-		case 62:
-			return '+';
-		default:
-			return '/';
-	}
-};
-var truqu$elm_base64$Base64$Encode$toBase64 = function (_int) {
-	return _Utils_ap(
-		truqu$elm_base64$Base64$Encode$intToBase64(63 & (_int >>> 18)),
-		_Utils_ap(
-			truqu$elm_base64$Base64$Encode$intToBase64(63 & (_int >>> 12)),
-			_Utils_ap(
-				truqu$elm_base64$Base64$Encode$intToBase64(63 & (_int >>> 6)),
-				truqu$elm_base64$Base64$Encode$intToBase64(63 & (_int >>> 0)))));
-};
-var truqu$elm_base64$Base64$Encode$add = F2(
-	function (_char, _n0) {
-		var res = _n0.a;
-		var count = _n0.b;
-		var acc = _n0.c;
-		var current = (acc << 8) | _char;
-		if (count === 2) {
-			return _Utils_Tuple3(
-				_Utils_ap(
-					res,
-					truqu$elm_base64$Base64$Encode$toBase64(current)),
-				0,
-				0);
-		} else {
-			return _Utils_Tuple3(res, count + 1, current);
-		}
-	});
-var truqu$elm_base64$Base64$Encode$chomp = F2(
-	function (char_, acc) {
-		var _char = elm$core$Char$toCode(char_);
-		return (_char < 128) ? A2(truqu$elm_base64$Base64$Encode$add, _char, acc) : ((_char < 2048) ? A2(
-			truqu$elm_base64$Base64$Encode$add,
-			128 | (63 & _char),
-			A2(truqu$elm_base64$Base64$Encode$add, 192 | (_char >>> 6), acc)) : (((_char < 55296) || ((_char >= 57344) && (_char <= 65535))) ? A2(
-			truqu$elm_base64$Base64$Encode$add,
-			128 | (63 & _char),
-			A2(
-				truqu$elm_base64$Base64$Encode$add,
-				128 | (63 & (_char >>> 6)),
-				A2(truqu$elm_base64$Base64$Encode$add, 224 | (_char >>> 12), acc))) : A2(
-			truqu$elm_base64$Base64$Encode$add,
-			128 | (63 & _char),
-			A2(
-				truqu$elm_base64$Base64$Encode$add,
-				128 | (63 & (_char >>> 6)),
-				A2(
-					truqu$elm_base64$Base64$Encode$add,
-					128 | (63 & (_char >>> 12)),
-					A2(truqu$elm_base64$Base64$Encode$add, 240 | (_char >>> 18), acc))))));
-	});
-var truqu$elm_base64$Base64$Encode$initial = _Utils_Tuple3('', 0, 0);
-var truqu$elm_base64$Base64$Encode$wrapUp = function (_n0) {
-	var res = _n0.a;
-	var cnt = _n0.b;
-	var acc = _n0.c;
-	switch (cnt) {
-		case 1:
-			return res + (truqu$elm_base64$Base64$Encode$intToBase64(63 & (acc >>> 2)) + (truqu$elm_base64$Base64$Encode$intToBase64(63 & (acc << 4)) + '=='));
-		case 2:
-			return res + (truqu$elm_base64$Base64$Encode$intToBase64(63 & (acc >>> 10)) + (truqu$elm_base64$Base64$Encode$intToBase64(63 & (acc >>> 4)) + (truqu$elm_base64$Base64$Encode$intToBase64(63 & (acc << 2)) + '=')));
-		default:
-			return res;
-	}
-};
-var truqu$elm_base64$Base64$Encode$encode = function (input) {
-	return truqu$elm_base64$Base64$Encode$wrapUp(
-		A3(elm$core$String$foldl, truqu$elm_base64$Base64$Encode$chomp, truqu$elm_base64$Base64$Encode$initial, input));
-};
-var truqu$elm_base64$Base64$encode = truqu$elm_base64$Base64$Encode$encode;
-var author$project$Bingo$Card$Save$b64e = prozacchiwawa$elm_urlbase64$UrlBase64$encode(
-	A2(elm$core$Basics$composeR, truqu$elm_base64$Base64$encode, elm$core$Result$Ok));
-var elm$json$Json$Encode$int = _Json_wrap;
-var elm$json$Json$Encode$object = function (pairs) {
-	return _Json_wrap(
-		A3(
-			elm$core$List$foldl,
-			F2(
-				function (_n0, obj) {
-					var k = _n0.a;
-					var v = _n0.b;
-					return A3(_Json_addField, k, v, obj);
-				}),
-			_Json_emptyObject(_Utils_Tuple0),
-			pairs));
-};
-var author$project$Bingo$Card$Save$encodeLayout = function (layout) {
-	return elm$json$Json$Encode$object(
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'size',
-				elm$json$Json$Encode$int(layout.size)),
-				_Utils_Tuple2(
-				'free',
-				elm$json$Json$Encode$bool(layout.free))
-			]));
-};
-var author$project$Bingo$Card$Save$encodeValue = function (value) {
-	return elm$json$Json$Encode$string(value);
-};
-var elm$json$Json$Encode$list = F2(
-	function (func, entries) {
-		return _Json_wrap(
-			A3(
-				elm$core$List$foldl,
-				_Json_addEntry(func),
-				_Json_emptyArray(_Utils_Tuple0),
-				entries));
-	});
-var author$project$Bingo$Card$Save$encodeCard = function (card) {
-	return elm$json$Json$Encode$object(
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'name',
-				elm$json$Json$Encode$string(card.name)),
-				_Utils_Tuple2(
-				'values',
-				A2(elm$json$Json$Encode$list, author$project$Bingo$Card$Save$encodeValue, card.values)),
-				_Utils_Tuple2(
-				'layout',
-				author$project$Bingo$Card$Save$encodeLayout(card.layout))
-			]));
-};
-var elm$core$Result$withDefault = F2(
-	function (def, result) {
-		if (result.$ === 'Ok') {
-			var a = result.a;
-			return a;
-		} else {
-			return def;
-		}
-	});
-var author$project$Bingo$Card$Save$save = function (card) {
-	return A2(
-		elm$core$Result$withDefault,
-		'',
-		author$project$Bingo$Card$Save$b64e(
-			A2(
-				elm$json$Json$Encode$encode,
-				0,
-				author$project$Bingo$Card$Save$encodeCard(card))));
-};
 var elm$html$Html$Attributes$readonly = elm$html$Html$Attributes$boolProperty('readOnly');
-var author$project$Bingo$Editor$linkView = function (card) {
+var author$project$Bingo$Editor$linkView = function (code) {
 	return A2(
 		elm$html$Html$div,
 		_List_fromArray(
@@ -6922,22 +6754,18 @@ var author$project$Bingo$Editor$linkView = function (card) {
 					]),
 				_List_fromArray(
 					[
-						elm$html$Html$text('View Link: ')
+						elm$html$Html$text('Edit Link: ')
 					])),
 				A2(
 				elm$html$Html$input,
 				_List_fromArray(
 					[
 						elm$html$Html$Attributes$id('view-field'),
-						elm$html$Html$Attributes$value(
-						'http://localhost:8000/#?view=' + author$project$Bingo$Card$Save$save(card)),
+						elm$html$Html$Attributes$value('https://abinarygeek.github.io/bingo-card-gen/#' + code),
 						elm$html$Html$Attributes$readonly(true)
 					]),
 				_List_Nil)
 			]));
-};
-var author$project$Bingo$Editor$linkEdit = function (card) {
-	return author$project$Bingo$Editor$linkView(card);
 };
 var elm$html$Html$form = _VirtualDom_node('form');
 var elm$html$Html$h2 = _VirtualDom_node('h2');
@@ -6964,57 +6792,65 @@ var elm$html$Html$Events$onSubmit = function (msg) {
 			elm$html$Html$Events$alwaysPreventDefault,
 			elm$json$Json$Decode$succeed(msg)));
 };
-var author$project$Bingo$Editor$controls = function (card) {
-	return A2(
-		elm$html$Html$div,
-		_List_fromArray(
-			[
-				elm$html$Html$Attributes$class('container')
-			]),
-		_List_fromArray(
-			[
-				A2(
-				elm$html$Html$h2,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text('Settings')
-					])),
-				A2(
-				elm$html$Html$form,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('pure-form pure-form-stacked'),
-						elm$html$Html$Events$onSubmit(author$project$Bingo$Editor$Messages$NoOp)
-					]),
-				_List_fromArray(
-					[
-						author$project$Bingo$Editor$changeNameControl(card.name),
-						author$project$Bingo$Editor$changeSizeControl(card.layout),
-						author$project$Bingo$Editor$freeSquareControl(card.layout)
-					])),
-				A2(elm$html$Html$hr, _List_Nil, _List_Nil),
-				A2(
-				elm$html$Html$h2,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text('Share')
-					])),
-				A2(
-				elm$html$Html$form,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('pure-form pure-form-stacked'),
-						elm$html$Html$Events$onSubmit(author$project$Bingo$Editor$Messages$NoOp)
-					]),
-				_List_fromArray(
-					[
-						author$project$Bingo$Editor$linkView(card),
-						author$project$Bingo$Editor$linkEdit(card)
-					]))
-			]));
-};
+var author$project$Bingo$Editor$controls = F2(
+	function (code, card) {
+		return A2(
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('container')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$h2,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text('Settings')
+						])),
+					A2(
+					elm$html$Html$form,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('pure-form pure-form-stacked'),
+							elm$html$Html$Events$onSubmit(author$project$Bingo$Editor$Messages$NoOp)
+						]),
+					_List_fromArray(
+						[
+							author$project$Bingo$Editor$changeNameControl(card.name),
+							author$project$Bingo$Editor$changeSizeControl(card.layout),
+							author$project$Bingo$Editor$freeSquareControl(card.layout)
+						])),
+					A2(elm$html$Html$hr, _List_Nil, _List_Nil),
+					A2(
+					elm$html$Html$h2,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text('Share')
+						])),
+					A2(
+					elm$html$Html$form,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('pure-form pure-form-stacked'),
+							elm$html$Html$Events$onSubmit(author$project$Bingo$Editor$Messages$NoOp)
+						]),
+					A2(
+						elm$core$Maybe$withDefault,
+						_List_Nil,
+						A2(
+							elm$core$Maybe$map,
+							function (c) {
+								return _List_fromArray(
+									[
+										author$project$Bingo$Editor$linkView(c)
+									]);
+							},
+							code)))
+				]));
+	});
 var norpan$elm_html5_drag_drop$Html5$DragDrop$getDragId = function (model) {
 	switch (model.$) {
 		case 'NotDragging':
@@ -7128,7 +6964,6 @@ var norpan$elm_html5_drag_drop$Html5$DragDrop$onWithOptions = F3(
 				},
 				decoder));
 	});
-var elm$json$Json$Decode$int = _Json_decodeInt;
 var elm$json$Json$Decode$map4 = _Json_map4;
 var norpan$elm_html5_drag_drop$Html5$DragDrop$Position = F4(
 	function (width, height, x, y) {
@@ -7373,16 +7208,6 @@ var author$project$Bingo$Editor$ValueList$valueListItem = F3(
 						]))
 				]));
 	});
-var elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return elm$core$Maybe$Just(
-				f(value));
-		} else {
-			return elm$core$Maybe$Nothing;
-		}
-	});
 var elm$html$Html$p = _VirtualDom_node('p');
 var author$project$Bingo$Editor$ValueList$view = F4(
 	function (attributes, card, newValueInput, drag) {
@@ -7441,15 +7266,6 @@ var author$project$Bingo$Editor$ValueList$view = F4(
 					]),
 				bin));
 	});
-var elm$core$Maybe$andThen = F2(
-	function (callback, maybeValue) {
-		if (maybeValue.$ === 'Just') {
-			var value = maybeValue.a;
-			return callback(value);
-		} else {
-			return elm$core$Maybe$Nothing;
-		}
-	});
 var author$project$Bingo$Editor$view = function (model) {
 	var dropTarget = norpan$elm_html5_drag_drop$Html5$DragDrop$getDropId(model.dragDrop);
 	var attributes = author$project$Bingo$Editor$squareAttributes(
@@ -7472,7 +7288,7 @@ var author$project$Bingo$Editor$view = function (model) {
 			]),
 		_List_fromArray(
 			[
-				author$project$Bingo$Editor$controls(model.card),
+				A2(author$project$Bingo$Editor$controls, model.code, model.card),
 				A4(
 				author$project$Bingo$Editor$ValueList$view,
 				attributes,
@@ -7525,8 +7341,24 @@ var author$project$Main$view = function (model) {
 	}
 };
 var elm$browser$Browser$application = _Browser_application;
+var elm$json$Json$Decode$andThen = _Json_andThen;
+var elm$json$Json$Decode$null = _Json_decodeNull;
+var elm$json$Json$Decode$oneOf = _Json_oneOf;
 var author$project$Main$main = elm$browser$Browser$application(
 	{init: author$project$Main$init, onUrlChange: author$project$Main$onUrlChange, onUrlRequest: author$project$Main$onUrlRequest, subscriptions: author$project$Main$subscriptions, update: author$project$Main$update, view: author$project$Main$view});
 _Platform_export({'Main':{'init':author$project$Main$main(
-	elm$json$Json$Decode$succeed(
-		{}))(0)}});}(this));
+	A2(
+		elm$json$Json$Decode$andThen,
+		function (initial) {
+			return elm$json$Json$Decode$succeed(
+				{initial: initial});
+		},
+		A2(
+			elm$json$Json$Decode$field,
+			'initial',
+			elm$json$Json$Decode$oneOf(
+				_List_fromArray(
+					[
+						elm$json$Json$Decode$null(elm$core$Maybe$Nothing),
+						A2(elm$json$Json$Decode$map, elm$core$Maybe$Just, elm$json$Json$Decode$string)
+					])))))(0)}});}(this));

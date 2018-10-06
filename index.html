@@ -17,12 +17,28 @@
       crossorigin="anonymous" />
     <link rel="stylesheet" href="style.css" />
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"
+      integrity="sha256-nRoO8HoupfqozUr7YKBRgHXmdx40Hl/04OSBzv7e7L8="
+      crossorigin="anonymous"></script>
     <script src="bingo.js"></script>
   </head>
 
   <body>
     <script>
-      var app = Elm.Main.init({flags: {}});
+      const hash = window.location.hash;
+      let initial;
+      if (hash) {
+        initial = LZString.decompressFromEncodedURIComponent(hash.substring(1));
+      } else {
+        initial = null;
+      }
+      const app = Elm.Main.init({flags: {initial: initial}});
+      app.ports.compress.subscribe(function(data) {
+        app.ports.compressed.send(LZString.compressToEncodedURIComponent(data));
+      });
+      app.ports.decompress.subscribe(function(data) {
+        app.ports.decompressed.send(LZString.decompressFromEncodedURIComponent(data));
+      });
     </script>
   </body>
 </html>
