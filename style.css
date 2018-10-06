@@ -1,0 +1,119 @@
+@font-face {
+  font-family: "Crewniverse";
+  src: url("crewniverse.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Quadrit";
+  src: url("Quadrit.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+.editor {
+  display: flex;
+}
+
+.container {
+  margin: 1em;
+  padding: 0.5em;
+  width: 20em;
+}
+
+.container h2 {
+  text-align: center;
+}
+
+.bingo-card {
+  background-color: #f0cd78;
+  width: 35rem;
+}
+
+.bingo-card h1 {
+  font-family: "Quadrit", sans-serif;
+  line-height: 1.8rem;
+  font-size: 1.5rem;
+  margin: 0 0.5rem;
+  padding: 1rem 0;
+  color: #aa78f0;
+  text-shadow: 0.1rem 0.1rem #73623a;
+  overflow-wrap: break-word;
+  overflow: hidden;
+}
+
+.bingo-squares {
+  margin: 0 0.5rem;
+  width: 34rem;
+  height: 34rem;
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.bingo-square {
+  font-family: "Crewniverse", sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  overflow: hidden;
+  padding: 0.25rem;
+  font-style: bold;
+  font-size: 0.8em;
+}
+
+.highlighted {
+  border: 3px dotted #000000;
+}
+
+.bingo-square span {
+  text-align: center;
+  overflow-wrap: break-word;
+  overflow: hidden;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem;
+}
+
+.footer a {
+  font-family: "Quadrit", sans-serif;
+  font-size: 10px;
+  color: #73623a;
+  text-decoration: none;
+}
+
+.values li {
+  overflow-wrap: break-word;
+  margin: 0.8rem 0;
+}
+
+.value {
+  background-color: #eeeeee;
+  padding: 0.3rem;
+}
+
+.bin {
+  margin-top: 2rem;
+  width: 100%;
+  background-color: #eeaaaa;
+  padding: 2rem 1rem;
+  text-align: center
+}
+
+.unused {
+  color: #cccccc;
+}
+
+.change-size input {
+  width: 3rem;
+}
+
+form div {
+  margin: 0.4em;
+}
