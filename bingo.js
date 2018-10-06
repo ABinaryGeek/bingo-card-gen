@@ -5301,10 +5301,179 @@ var author$project$Bingo$Card$toggleFreeSquare = function (card) {
 			layout: author$project$Bingo$Card$Layout$toggleFreeSquare(card.layout)
 		});
 };
+var elm$core$Basics$modBy = _Basics_modBy;
+var author$project$Bingo$Card$Layout$freeSquareValid = function (layout) {
+	return A2(elm$core$Basics$modBy, 2, layout.size);
+};
+var author$project$Bingo$Card$Layout$freeSquareUsed = function (layout) {
+	return layout.free && author$project$Bingo$Card$Layout$freeSquareValid(layout);
+};
+var author$project$Bingo$Card$Layout$amountOfSquares = function (layout) {
+	var amount = layout.size * layout.size;
+	var _n0 = author$project$Bingo$Card$Layout$freeSquareUsed(layout);
+	if (_n0) {
+		return amount - 1;
+	} else {
+		return amount;
+	}
+};
 var author$project$Bingo$Editor$Messages$NoOp = {$: 'NoOp'};
 var author$project$Bingo$Editor$Messages$Reorder = function (a) {
 	return {$: 'Reorder', a: a};
 };
+var elm$core$List$drop = F2(
+	function (n, list) {
+		drop:
+		while (true) {
+			if (n <= 0) {
+				return list;
+			} else {
+				if (!list.b) {
+					return list;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs;
+					n = $temp$n;
+					list = $temp$list;
+					continue drop;
+				}
+			}
+		}
+	});
+var elm$core$List$takeReverse = F3(
+	function (n, list, kept) {
+		takeReverse:
+		while (true) {
+			if (n <= 0) {
+				return kept;
+			} else {
+				if (!list.b) {
+					return kept;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs,
+						$temp$kept = A2(elm$core$List$cons, x, kept);
+					n = $temp$n;
+					list = $temp$list;
+					kept = $temp$kept;
+					continue takeReverse;
+				}
+			}
+		}
+	});
+var elm$core$List$takeTailRec = F2(
+	function (n, list) {
+		return elm$core$List$reverse(
+			A3(elm$core$List$takeReverse, n, list, _List_Nil));
+	});
+var elm$core$List$takeFast = F3(
+	function (ctr, n, list) {
+		if (n <= 0) {
+			return _List_Nil;
+		} else {
+			var _n0 = _Utils_Tuple2(n, list);
+			_n0$1:
+			while (true) {
+				_n0$5:
+				while (true) {
+					if (!_n0.b.b) {
+						return list;
+					} else {
+						if (_n0.b.b.b) {
+							switch (_n0.a) {
+								case 1:
+									break _n0$1;
+								case 2:
+									var _n2 = _n0.b;
+									var x = _n2.a;
+									var _n3 = _n2.b;
+									var y = _n3.a;
+									return _List_fromArray(
+										[x, y]);
+								case 3:
+									if (_n0.b.b.b.b) {
+										var _n4 = _n0.b;
+										var x = _n4.a;
+										var _n5 = _n4.b;
+										var y = _n5.a;
+										var _n6 = _n5.b;
+										var z = _n6.a;
+										return _List_fromArray(
+											[x, y, z]);
+									} else {
+										break _n0$5;
+									}
+								default:
+									if (_n0.b.b.b.b && _n0.b.b.b.b.b) {
+										var _n7 = _n0.b;
+										var x = _n7.a;
+										var _n8 = _n7.b;
+										var y = _n8.a;
+										var _n9 = _n8.b;
+										var z = _n9.a;
+										var _n10 = _n9.b;
+										var w = _n10.a;
+										var tl = _n10.b;
+										return (ctr > 1000) ? A2(
+											elm$core$List$cons,
+											x,
+											A2(
+												elm$core$List$cons,
+												y,
+												A2(
+													elm$core$List$cons,
+													z,
+													A2(
+														elm$core$List$cons,
+														w,
+														A2(elm$core$List$takeTailRec, n - 4, tl))))) : A2(
+											elm$core$List$cons,
+											x,
+											A2(
+												elm$core$List$cons,
+												y,
+												A2(
+													elm$core$List$cons,
+													z,
+													A2(
+														elm$core$List$cons,
+														w,
+														A3(elm$core$List$takeFast, ctr + 1, n - 4, tl)))));
+									} else {
+										break _n0$5;
+									}
+							}
+						} else {
+							if (_n0.a === 1) {
+								break _n0$1;
+							} else {
+								break _n0$5;
+							}
+						}
+					}
+				}
+				return list;
+			}
+			var _n1 = _n0.b;
+			var x = _n1.a;
+			return _List_fromArray(
+				[x]);
+		}
+	});
+var elm$core$List$take = F2(
+	function (n, list) {
+		return A3(elm$core$List$takeFast, 0, n, list);
+	});
+var author$project$Bingo$Utils$split = F2(
+	function (amount, list) {
+		var before = A2(elm$core$List$take, amount, list);
+		var after = A2(elm$core$List$drop, amount, list);
+		return _Utils_Tuple2(before, after);
+	});
 var elm$browser$Browser$External = function (a) {
 	return {$: 'External', a: a};
 };
@@ -5706,153 +5875,6 @@ var elm$core$List$append = F2(
 			return A3(elm$core$List$foldr, elm$core$List$cons, ys, xs);
 		}
 	});
-var elm$core$List$drop = F2(
-	function (n, list) {
-		drop:
-		while (true) {
-			if (n <= 0) {
-				return list;
-			} else {
-				if (!list.b) {
-					return list;
-				} else {
-					var x = list.a;
-					var xs = list.b;
-					var $temp$n = n - 1,
-						$temp$list = xs;
-					n = $temp$n;
-					list = $temp$list;
-					continue drop;
-				}
-			}
-		}
-	});
-var elm$core$List$takeReverse = F3(
-	function (n, list, kept) {
-		takeReverse:
-		while (true) {
-			if (n <= 0) {
-				return kept;
-			} else {
-				if (!list.b) {
-					return kept;
-				} else {
-					var x = list.a;
-					var xs = list.b;
-					var $temp$n = n - 1,
-						$temp$list = xs,
-						$temp$kept = A2(elm$core$List$cons, x, kept);
-					n = $temp$n;
-					list = $temp$list;
-					kept = $temp$kept;
-					continue takeReverse;
-				}
-			}
-		}
-	});
-var elm$core$List$takeTailRec = F2(
-	function (n, list) {
-		return elm$core$List$reverse(
-			A3(elm$core$List$takeReverse, n, list, _List_Nil));
-	});
-var elm$core$List$takeFast = F3(
-	function (ctr, n, list) {
-		if (n <= 0) {
-			return _List_Nil;
-		} else {
-			var _n0 = _Utils_Tuple2(n, list);
-			_n0$1:
-			while (true) {
-				_n0$5:
-				while (true) {
-					if (!_n0.b.b) {
-						return list;
-					} else {
-						if (_n0.b.b.b) {
-							switch (_n0.a) {
-								case 1:
-									break _n0$1;
-								case 2:
-									var _n2 = _n0.b;
-									var x = _n2.a;
-									var _n3 = _n2.b;
-									var y = _n3.a;
-									return _List_fromArray(
-										[x, y]);
-								case 3:
-									if (_n0.b.b.b.b) {
-										var _n4 = _n0.b;
-										var x = _n4.a;
-										var _n5 = _n4.b;
-										var y = _n5.a;
-										var _n6 = _n5.b;
-										var z = _n6.a;
-										return _List_fromArray(
-											[x, y, z]);
-									} else {
-										break _n0$5;
-									}
-								default:
-									if (_n0.b.b.b.b && _n0.b.b.b.b.b) {
-										var _n7 = _n0.b;
-										var x = _n7.a;
-										var _n8 = _n7.b;
-										var y = _n8.a;
-										var _n9 = _n8.b;
-										var z = _n9.a;
-										var _n10 = _n9.b;
-										var w = _n10.a;
-										var tl = _n10.b;
-										return (ctr > 1000) ? A2(
-											elm$core$List$cons,
-											x,
-											A2(
-												elm$core$List$cons,
-												y,
-												A2(
-													elm$core$List$cons,
-													z,
-													A2(
-														elm$core$List$cons,
-														w,
-														A2(elm$core$List$takeTailRec, n - 4, tl))))) : A2(
-											elm$core$List$cons,
-											x,
-											A2(
-												elm$core$List$cons,
-												y,
-												A2(
-													elm$core$List$cons,
-													z,
-													A2(
-														elm$core$List$cons,
-														w,
-														A3(elm$core$List$takeFast, ctr + 1, n - 4, tl)))));
-									} else {
-										break _n0$5;
-									}
-							}
-						} else {
-							if (_n0.a === 1) {
-								break _n0$1;
-							} else {
-								break _n0$5;
-							}
-						}
-					}
-				}
-				return list;
-			}
-			var _n1 = _n0.b;
-			var x = _n1.a;
-			return _List_fromArray(
-				[x]);
-		}
-	});
-var elm$core$List$take = F2(
-	function (n, list) {
-		return A3(elm$core$List$takeFast, 0, n, list);
-	});
 var elm$core$Basics$negate = function (n) {
 	return -n;
 };
@@ -6099,6 +6121,15 @@ var author$project$Bingo$Editor$update = F2(
 							return author$project$Bingo$Editor$Messages$NoOp;
 						},
 						elm$browser$Browser$Dom$focus('add-value-field')));
+			case 'AddGivenValue':
+				var givenValue = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							card: A2(author$project$Bingo$Card$add, givenValue, model.card)
+						}),
+					elm$core$Platform$Cmd$none);
 			case 'UpdateNewValueField':
 				var newValue = msg.a;
 				return _Utils_Tuple2(
@@ -6140,12 +6171,31 @@ var author$project$Bingo$Editor$update = F2(
 						}),
 					elm$core$Platform$Cmd$none);
 			case 'Randomise':
-				return _Utils_Tuple2(
-					model,
-					A2(
-						elm$random$Random$generate,
-						author$project$Bingo$Editor$Messages$Reorder,
-						elm_community$random_extra$Random$List$shuffle(model.card.values)));
+				var includeUnused = msg.a.includeUnused;
+				if (includeUnused) {
+					return _Utils_Tuple2(
+						model,
+						A2(
+							elm$random$Random$generate,
+							author$project$Bingo$Editor$Messages$Reorder,
+							elm_community$random_extra$Random$List$shuffle(model.card.values)));
+				} else {
+					var amount = author$project$Bingo$Card$Layout$amountOfSquares(model.card.layout);
+					var _n3 = A2(author$project$Bingo$Utils$split, amount, model.card.values);
+					var used = _n3.a;
+					var unused = _n3.b;
+					return _Utils_Tuple2(
+						model,
+						A2(
+							elm$random$Random$generate,
+							author$project$Bingo$Editor$Messages$Reorder,
+							A2(
+								elm$random$Random$map,
+								function (shuffled) {
+									return _Utils_ap(shuffled, unused);
+								},
+								elm_community$random_extra$Random$List$shuffle(used))));
+				}
 			case 'Reorder':
 				var values = msg.a;
 				return _Utils_Tuple2(
@@ -6157,15 +6207,15 @@ var author$project$Bingo$Editor$update = F2(
 					elm$core$Platform$Cmd$none);
 			case 'DragDropMsg':
 				var dragDropMsg = msg.a;
-				var _n3 = A2(norpan$elm_html5_drag_drop$Html5$DragDrop$update, dragDropMsg, model.dragDrop);
-				var dragDrop = _n3.a;
-				var result = _n3.b;
+				var _n4 = A2(norpan$elm_html5_drag_drop$Html5$DragDrop$update, dragDropMsg, model.dragDrop);
+				var dragDrop = _n4.a;
+				var result = _n4.b;
 				var card = function () {
 					if (result.$ === 'Just') {
-						var _n5 = result.a;
-						var dragged = _n5.a;
-						var dropTarget = _n5.b;
-						var position = _n5.c;
+						var _n6 = result.a;
+						var dragged = _n6.a;
+						var dropTarget = _n6.b;
+						var position = _n6.c;
 						if (dropTarget.$ === 'ValueTarget') {
 							var drop = dropTarget.a;
 							return A3(author$project$Bingo$Card$swap, dragged, drop, model.card);
@@ -6197,6 +6247,8 @@ var author$project$Bingo$Editor$update = F2(
 							code: elm$core$Maybe$Just(code)
 						}),
 					elm$core$Platform$Cmd$none);
+			case 'Save':
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 			default:
 				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
@@ -6262,6 +6314,7 @@ var author$project$Main$codeUrl = function (code) {
 };
 var author$project$Main$compress = _Platform_outgoingPort('compress', elm$json$Json$Encode$string);
 var author$project$Main$decompress = _Platform_outgoingPort('decompress', elm$json$Json$Encode$string);
+var author$project$Main$save = _Platform_outgoingPort('save', elm$json$Json$Encode$string);
 var elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
 var elm$core$List$concat = function (lists) {
 	return A3(elm$core$List$foldr, elm$core$List$append, _List_Nil, lists);
@@ -6276,17 +6329,23 @@ var author$project$Main$update = F2(
 				if (_n1.$ === 'E') {
 					var editor = _n1.a;
 					var changeUrl = function () {
-						if (msgEditor.$ === 'UpdateCode') {
-							var code = msgEditor.a;
-							return _List_fromArray(
-								[
-									A2(
-									elm$browser$Browser$Navigation$pushUrl,
-									model.key,
-									author$project$Main$codeUrl(code))
-								]);
-						} else {
-							return _List_Nil;
+						switch (msgEditor.$) {
+							case 'UpdateCode':
+								var code = msgEditor.a;
+								return _List_fromArray(
+									[
+										A2(
+										elm$browser$Browser$Navigation$pushUrl,
+										model.key,
+										author$project$Main$codeUrl(code))
+									]);
+							case 'Save':
+								return _List_fromArray(
+									[
+										author$project$Main$save(editor.card.name)
+									]);
+							default:
+								return _List_Nil;
 						}
 					}();
 					var _n2 = A2(author$project$Bingo$Editor$update, msgEditor, editor);
@@ -6405,33 +6464,11 @@ var author$project$Bingo$Card$square = F2(
 						]))
 				]));
 	});
-var elm$core$Basics$modBy = _Basics_modBy;
-var author$project$Bingo$Card$Layout$freeSquareValid = function (layout) {
-	return A2(elm$core$Basics$modBy, 2, layout.size);
-};
-var author$project$Bingo$Card$Layout$freeSquareUsed = function (layout) {
-	return layout.free && author$project$Bingo$Card$Layout$freeSquareValid(layout);
-};
-var author$project$Bingo$Card$Layout$amountOfSquares = function (layout) {
-	var amount = layout.size * layout.size;
-	var _n0 = author$project$Bingo$Card$Layout$freeSquareUsed(layout);
-	if (_n0) {
-		return amount - 1;
-	} else {
-		return amount;
-	}
-};
 var author$project$Bingo$Card$Model$Filled = function (a) {
 	return {$: 'Filled', a: a};
 };
 var author$project$Bingo$Card$Model$Free = {$: 'Free'};
 var author$project$Bingo$Card$Model$Unfilled = {$: 'Unfilled'};
-var author$project$Bingo$Utils$split = F2(
-	function (amount, list) {
-		var before = A2(elm$core$List$take, amount, list);
-		var after = A2(elm$core$List$drop, amount, list);
-		return _Utils_Tuple2(before, after);
-	});
 var elm$core$List$repeatHelp = F3(
 	function (result, n, value) {
 		repeatHelp:
@@ -6736,6 +6773,25 @@ var author$project$Bingo$Editor$freeSquareControl = function (layout) {
 				_List_Nil)
 			]));
 };
+var author$project$Bingo$Icon$icon = function (name) {
+	return A2(
+		elm$html$Html$span,
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$class('fas fa-' + name)
+			]),
+		_List_Nil);
+};
+var author$project$Bingo$Icon$copy = author$project$Bingo$Icon$icon('copy');
+var elm$html$Html$button = _VirtualDom_node('button');
+var elm$virtual_dom$VirtualDom$attribute = F2(
+	function (key, value) {
+		return A2(
+			_VirtualDom_attribute,
+			_VirtualDom_noOnOrFormAction(key),
+			_VirtualDom_noJavaScriptOrHtmlUri(value));
+	});
+var elm$html$Html$Attributes$attribute = elm$virtual_dom$VirtualDom$attribute;
 var elm$html$Html$Attributes$readonly = elm$html$Html$Attributes$boolProperty('readOnly');
 var author$project$Bingo$Editor$linkView = function (code) {
 	return A2(
@@ -6754,19 +6810,71 @@ var author$project$Bingo$Editor$linkView = function (code) {
 					]),
 				_List_fromArray(
 					[
-						elm$html$Html$text('Edit Link: ')
+						elm$html$Html$text('Link To Edit: ')
 					])),
 				A2(
-				elm$html$Html$input,
+				elm$html$Html$div,
 				_List_fromArray(
 					[
-						elm$html$Html$Attributes$id('view-field'),
-						elm$html$Html$Attributes$value('https://abinarygeek.github.io/bingo-card-gen/#' + code),
-						elm$html$Html$Attributes$readonly(true)
+						elm$html$Html$Attributes$class('form-row')
 					]),
-				_List_Nil)
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$input,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$id('view-field'),
+								elm$html$Html$Attributes$value('https://abinarygeek.github.io/bingo-card-gen/#' + code),
+								elm$html$Html$Attributes$readonly(true)
+							]),
+						_List_Nil),
+						A2(
+						elm$html$Html$button,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('copy-button pure-button'),
+								A2(elm$html$Html$Attributes$attribute, 'data-clipboard-target', '#view-field')
+							]),
+						_List_fromArray(
+							[author$project$Bingo$Icon$copy]))
+					]))
 			]));
 };
+var author$project$Bingo$Editor$Messages$Save = {$: 'Save'};
+var author$project$Bingo$Icon$image = author$project$Bingo$Icon$icon('image');
+var author$project$Bingo$Editor$saveImage = A2(
+	elm$html$Html$div,
+	_List_fromArray(
+		[
+			elm$html$Html$Attributes$class('pure-control-group')
+		]),
+	_List_fromArray(
+		[
+			A2(
+			elm$html$Html$label,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$for('save-button')
+				]),
+			_List_fromArray(
+				[
+					elm$html$Html$text('Save ')
+				])),
+			A2(
+			elm$html$Html$button,
+			_List_fromArray(
+				[
+					elm$html$Html$Events$onClick(author$project$Bingo$Editor$Messages$Save),
+					elm$html$Html$Attributes$id('save-button'),
+					elm$html$Html$Attributes$class('pure-button')
+				]),
+			_List_fromArray(
+				[
+					author$project$Bingo$Icon$image,
+					elm$html$Html$text(' As Image')
+				]))
+		]));
 var elm$html$Html$form = _VirtualDom_node('form');
 var elm$html$Html$h2 = _VirtualDom_node('h2');
 var elm$html$Html$hr = _VirtualDom_node('hr');
@@ -6845,7 +6953,8 @@ var author$project$Bingo$Editor$controls = F2(
 							function (c) {
 								return _List_fromArray(
 									[
-										author$project$Bingo$Editor$linkView(c)
+										author$project$Bingo$Editor$linkView(c),
+										author$project$Bingo$Editor$saveImage
 									]);
 							},
 							code)))
@@ -6896,14 +7005,6 @@ var author$project$Bingo$Editor$Messages$DragDropMsg = function (a) {
 var author$project$Bingo$Editor$Model$ValueTarget = function (a) {
 	return {$: 'ValueTarget', a: a};
 };
-var elm$virtual_dom$VirtualDom$attribute = F2(
-	function (key, value) {
-		return A2(
-			_VirtualDom_attribute,
-			_VirtualDom_noOnOrFormAction(key),
-			_VirtualDom_noJavaScriptOrHtmlUri(value));
-	});
-var elm$html$Html$Attributes$attribute = elm$virtual_dom$VirtualDom$attribute;
 var norpan$elm_html5_drag_drop$Html5$DragDrop$DragEnd = {$: 'DragEnd'};
 var norpan$elm_html5_drag_drop$Html5$DragDrop$DragStart = function (a) {
 	return {$: 'DragStart', a: a};
@@ -7057,64 +7158,48 @@ var author$project$Bingo$Editor$squareAttributes = F2(
 	});
 var author$project$Bingo$Editor$Model$BinTarget = {$: 'BinTarget'};
 var author$project$Bingo$Editor$ValueList$binView = function (drag) {
-	return _List_fromArray(
-		[
-			A2(
-			elm$html$Html$div,
-			_Utils_ap(
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('bin')
-					]),
-				A2(norpan$elm_html5_drag_drop$Html5$DragDrop$droppable, author$project$Bingo$Editor$Messages$DragDropMsg, author$project$Bingo$Editor$Model$BinTarget)),
+	return A2(
+		elm$html$Html$div,
+		_Utils_ap(
 			_List_fromArray(
 				[
-					elm$html$Html$text('Delete')
-				]))
-		]);
+					elm$html$Html$Attributes$class('bin')
+				]),
+			A2(norpan$elm_html5_drag_drop$Html5$DragDrop$droppable, author$project$Bingo$Editor$Messages$DragDropMsg, author$project$Bingo$Editor$Model$BinTarget)),
+		_List_fromArray(
+			[
+				elm$html$Html$text('Delete')
+			]));
 };
-var author$project$Bingo$Editor$Messages$AddNewValue = {$: 'AddNewValue'};
-var author$project$Bingo$Editor$Messages$UpdateNewValueField = function (a) {
-	return {$: 'UpdateNewValueField', a: a};
+var author$project$Bingo$Editor$Messages$Randomise = function (a) {
+	return {$: 'Randomise', a: a};
 };
-var elm$html$Html$button = _VirtualDom_node('button');
-var author$project$Bingo$Editor$ValueList$addValueControl = F2(
-	function (input, card) {
-		return _List_fromArray(
+var author$project$Bingo$Icon$random = author$project$Bingo$Icon$icon('random');
+var elm$html$Html$Attributes$title = elm$html$Html$Attributes$stringProperty('title');
+var author$project$Bingo$Editor$ValueList$randomiseOrder = function (values) {
+	return A2(
+		elm$html$Html$div,
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$class('pure-controls')
+			]),
+		_List_fromArray(
 			[
 				A2(
-				elm$html$Html$div,
+				elm$html$Html$label,
 				_List_fromArray(
 					[
-						elm$html$Html$Attributes$class('add-value pure-control-group')
+						elm$html$Html$Attributes$for('add-value-field')
 					]),
 				_List_fromArray(
 					[
-						A2(
-						elm$html$Html$label,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$for('add-value-field')
-							]),
-						_List_fromArray(
-							[
-								elm$html$Html$text('Value:')
-							])),
-						A2(
-						elm$html$Html$input,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$value(input),
-								elm$html$Html$Attributes$id('add-value-field'),
-								elm$html$Html$Events$onInput(author$project$Bingo$Editor$Messages$UpdateNewValueField)
-							]),
-						_List_Nil)
+						elm$html$Html$text('Shuffle:')
 					])),
 				A2(
 				elm$html$Html$div,
 				_List_fromArray(
 					[
-						elm$html$Html$Attributes$class('pure-controls')
+						elm$html$Html$Attributes$class('form-row')
 					]),
 				_List_fromArray(
 					[
@@ -7122,60 +7207,35 @@ var author$project$Bingo$Editor$ValueList$addValueControl = F2(
 						elm$html$Html$button,
 						_List_fromArray(
 							[
-								elm$html$Html$Events$onClick(author$project$Bingo$Editor$Messages$AddNewValue),
-								elm$html$Html$Attributes$class('pure-button pure-button-primary'),
-								elm$html$Html$Attributes$disabled(
-								!A2(author$project$Bingo$Card$couldAdd, input, card))
+								elm$html$Html$Events$onClick(
+								author$project$Bingo$Editor$Messages$Randomise(
+									{includeUnused: true})),
+								elm$html$Html$Attributes$class('pure-button'),
+								elm$html$Html$Attributes$title('Shuffle all values, including those that don\'t fit in the card.')
 							]),
 						_List_fromArray(
 							[
-								elm$html$Html$text('Add')
+								author$project$Bingo$Icon$random,
+								elm$html$Html$text(' All')
+							])),
+						A2(
+						elm$html$Html$button,
+						_List_fromArray(
+							[
+								elm$html$Html$Events$onClick(
+								author$project$Bingo$Editor$Messages$Randomise(
+									{includeUnused: false})),
+								elm$html$Html$Attributes$class('pure-button'),
+								elm$html$Html$Attributes$title('Shuffle visible values, ignoring any that don\'t fit in the card.')
+							]),
+						_List_fromArray(
+							[
+								author$project$Bingo$Icon$random,
+								elm$html$Html$text(' Included')
 							]))
 					]))
-			]);
-	});
-var author$project$Bingo$Editor$Messages$Randomise = {$: 'Randomise'};
-var author$project$Bingo$Editor$ValueList$randomiseOrder = function (values) {
-	return _List_fromArray(
-		[
-			A2(
-			elm$html$Html$div,
-			_List_fromArray(
-				[
-					elm$html$Html$Attributes$class('pure-controls')
-				]),
-			_List_fromArray(
-				[
-					A2(
-					elm$html$Html$button,
-					_List_fromArray(
-						[
-							elm$html$Html$Events$onClick(author$project$Bingo$Editor$Messages$Randomise),
-							elm$html$Html$Attributes$class('pure-button')
-						]),
-					_List_fromArray(
-						[
-							elm$html$Html$text('Randomize Order')
-						]))
-				]))
-		]);
+			]));
 };
-var author$project$Bingo$Editor$ValueList$controls = F2(
-	function (card, newValueInput) {
-		return A2(
-			elm$html$Html$form,
-			_List_fromArray(
-				[
-					elm$html$Html$Attributes$class('pure-form pure-form-stacked'),
-					elm$html$Html$Events$onSubmit(author$project$Bingo$Editor$Messages$NoOp)
-				]),
-			elm$core$List$concat(
-				_List_fromArray(
-					[
-						A2(author$project$Bingo$Editor$ValueList$addValueControl, newValueInput, card),
-						author$project$Bingo$Editor$ValueList$randomiseOrder(card.values)
-					])));
-	});
 var author$project$Bingo$Editor$ValueList$usedClass = function (used) {
 	return elm$html$Html$Attributes$class(
 		function () {
@@ -7209,12 +7269,12 @@ var author$project$Bingo$Editor$ValueList$valueListItem = F3(
 				]));
 	});
 var elm$html$Html$p = _VirtualDom_node('p');
-var author$project$Bingo$Editor$ValueList$view = F4(
-	function (attributes, card, newValueInput, drag) {
+var author$project$Bingo$Editor$ValueList$view = F3(
+	function (attributes, card, drag) {
 		var itemH = author$project$Bingo$Editor$ValueList$valueListItem(attributes);
 		var bin = A2(
 			elm$core$Maybe$withDefault,
-			_List_Nil,
+			A2(elm$html$Html$span, _List_Nil, _List_Nil),
 			A2(elm$core$Maybe$map, author$project$Bingo$Editor$ValueList$binView, drag));
 		var amount = author$project$Bingo$Card$Layout$amountOfSquares(card.layout);
 		var _n0 = A2(author$project$Bingo$Utils$split, amount, card.values);
@@ -7226,45 +7286,209 @@ var author$project$Bingo$Editor$ValueList$view = F4(
 				[
 					elm$html$Html$Attributes$class('container')
 				]),
-			_Utils_ap(
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$h2,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text('Order')
+						])),
+					A2(
+					elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text('You can drag and drop values to swap squares around, or delete them.')
+						])),
+					A2(
+					elm$html$Html$form,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('pure-form pure-form-stacked'),
+							elm$html$Html$Events$onSubmit(author$project$Bingo$Editor$Messages$NoOp)
+						]),
+					_List_fromArray(
+						[
+							author$project$Bingo$Editor$ValueList$randomiseOrder(card.values)
+						])),
+					A2(
+					elm$html$Html$ul,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('values')
+						]),
+					elm$core$List$concat(
+						_List_fromArray(
+							[
+								A2(
+								elm$core$List$map,
+								itemH(true),
+								used),
+								A2(
+								elm$core$List$map,
+								itemH(false),
+								unused)
+							]))),
+					bin
+				]));
+	});
+var author$project$Bingo$Editor$Messages$AddGivenValue = function (a) {
+	return {$: 'AddGivenValue', a: a};
+};
+var author$project$Bingo$Icon$plus = author$project$Bingo$Icon$icon('plus');
+var author$project$Bingo$Editor$ValueList$addCommonButton = F2(
+	function (card, value) {
+		return A2(
+			elm$html$Html$li,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('common-values')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$button,
+					_List_fromArray(
+						[
+							elm$html$Html$Events$onClick(
+							author$project$Bingo$Editor$Messages$AddGivenValue(value)),
+							elm$html$Html$Attributes$class('pure-button'),
+							elm$html$Html$Attributes$disabled(
+							!A2(author$project$Bingo$Card$couldAdd, value, card))
+						]),
+					_List_fromArray(
+						[author$project$Bingo$Icon$plus])),
+					elm$html$Html$text(' \"'),
+					elm$html$Html$text(value),
+					elm$html$Html$text('\"')
+				]));
+	});
+var author$project$Bingo$Editor$ValueList$commonValues = _List_fromArray(
+	['Singing', 'Crying', 'Singing while crying', 'A phone is destroyed', 'A drill is invoked', 'Ears/noses are wiggled', 'Stevonnie', 'Non-Stevonnie fusion', 'Wolf is a good boy', 'Foreheads touched', 'Lapis uses a new nickname for Connie']);
+var author$project$Bingo$Editor$Messages$AddNewValue = {$: 'AddNewValue'};
+var author$project$Bingo$Editor$Messages$UpdateNewValueField = function (a) {
+	return {$: 'UpdateNewValueField', a: a};
+};
+var author$project$Bingo$Editor$ValueList$addValueControl = F2(
+	function (input, card) {
+		return _List_fromArray(
+			[
+				A2(
+				elm$html$Html$div,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('add-value pure-control-group')
+					]),
 				_List_fromArray(
 					[
 						A2(
-						elm$html$Html$h2,
-						_List_Nil,
+						elm$html$Html$label,
 						_List_fromArray(
 							[
-								elm$html$Html$text('Squares')
-							])),
-						A2(
-						elm$html$Html$p,
-						_List_Nil,
-						_List_fromArray(
-							[
-								elm$html$Html$text('Add values here. You can drag and drop them to swap squares around, or delete them.')
-							])),
-						A2(author$project$Bingo$Editor$ValueList$controls, card, newValueInput),
-						A2(elm$html$Html$hr, _List_Nil, _List_Nil),
-						A2(
-						elm$html$Html$ul,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$class('values')
+								elm$html$Html$Attributes$for('add-value-field')
 							]),
-						elm$core$List$concat(
+						_List_fromArray(
+							[
+								elm$html$Html$text('Value:')
+							])),
+						A2(
+						elm$html$Html$div,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('form-row')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$input,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$value(input),
+										elm$html$Html$Attributes$id('add-value-field'),
+										elm$html$Html$Events$onInput(author$project$Bingo$Editor$Messages$UpdateNewValueField)
+									]),
+								_List_Nil),
+								A2(
+								elm$html$Html$button,
+								_List_fromArray(
+									[
+										elm$html$Html$Events$onClick(author$project$Bingo$Editor$Messages$AddNewValue),
+										elm$html$Html$Attributes$class('pure-button pure-button-primary'),
+										elm$html$Html$Attributes$disabled(
+										!A2(author$project$Bingo$Card$couldAdd, input, card))
+									]),
+								_List_fromArray(
+									[
+										author$project$Bingo$Icon$plus,
+										elm$html$Html$text(' Add')
+									]))
+							]))
+					]))
+			]);
+	});
+var author$project$Bingo$Editor$ValueList$controls = F2(
+	function (card, newValueInput) {
+		return A2(
+			elm$html$Html$form,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('pure-form pure-form-stacked'),
+					elm$html$Html$Events$onSubmit(author$project$Bingo$Editor$Messages$NoOp)
+				]),
+			elm$core$List$concat(
+				_List_fromArray(
+					[
+						A2(author$project$Bingo$Editor$ValueList$addValueControl, newValueInput, card)
+					])));
+	});
+var author$project$Bingo$Editor$ValueList$viewControls = F2(
+	function (card, newValueInput) {
+		return A2(
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('container')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$h2,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text('Values')
+						])),
+					A2(author$project$Bingo$Editor$ValueList$controls, card, newValueInput),
+					A2(elm$html$Html$hr, _List_Nil, _List_Nil),
+					A2(
+					elm$html$Html$h2,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text('Common')
+						])),
+					A2(
+					elm$html$Html$ul,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('pure-form')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$div,
 							_List_fromArray(
 								[
-									A2(
-									elm$core$List$map,
-									itemH(true),
-									used),
-									A2(
-									elm$core$List$map,
-									itemH(false),
-									unused)
-								])))
-					]),
-				bin));
+									elm$html$Html$Attributes$class('add-value pure-control-group')
+								]),
+							A2(
+								elm$core$List$map,
+								author$project$Bingo$Editor$ValueList$addCommonButton(card),
+								author$project$Bingo$Editor$ValueList$commonValues))
+						]))
+				]));
 	});
 var author$project$Bingo$Editor$view = function (model) {
 	var dropTarget = norpan$elm_html5_drag_drop$Html5$DragDrop$getDropId(model.dragDrop);
@@ -7289,11 +7513,11 @@ var author$project$Bingo$Editor$view = function (model) {
 		_List_fromArray(
 			[
 				A2(author$project$Bingo$Editor$controls, model.code, model.card),
-				A4(
+				A2(author$project$Bingo$Editor$ValueList$viewControls, model.card, model.newValueInput),
+				A3(
 				author$project$Bingo$Editor$ValueList$view,
 				attributes,
 				model.card,
-				model.newValueInput,
 				author$project$Bingo$Editor$drag(model.dragDrop)),
 				A2(
 				elm$html$Html$div,

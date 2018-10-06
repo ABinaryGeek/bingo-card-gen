@@ -88,14 +88,20 @@
   text-decoration: none;
 }
 
+.common-values {
+  margin: 0.5rem 0;
+}
+
 .values li {
   overflow-wrap: break-word;
-  margin: 0.8rem 0;
+  margin: 0.5rem 0;
 }
 
 .value {
   background-color: #eeeeee;
-  padding: 0.3rem;
+  padding: 0.2rem;
+  font-size: 1rem;
+  line-height: 1.5rem;
 }
 
 .bin {
@@ -116,4 +122,18 @@
 
 form div {
   margin: 0.4em;
+}
+
+.pure-form .form-row {
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+.pure-form .form-row input {
+  margin-right: 1em;
+}
+
+.pure-form .form-row button {
+  margin-right: 1em;
 }
