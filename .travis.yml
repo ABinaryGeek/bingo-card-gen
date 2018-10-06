@@ -2,7 +2,7 @@ language: node_js
 node_js: node
 
 env:
-  - ELM_VERSION=0.19.0
+  - ELM_VERSION=0.19.0 JS=bingo.js JSMIN=bingo.min.js
 
 cache:
   directories:
@@ -11,10 +11,12 @@ cache:
     - $HOME/.npm
 
 install:
-  - npm install -g elm@$ELM_VERSION 
+  - npm install -g elm@$ELM_VERSION
+  - npm install -g uglify-js
 
 script:
-  - elm make src/Main.elm --output=bingo.js
+  - elm make src/Main.elm --optimize --output=$JS
+  - uglifyjs $JS --compress 'pure_funcs="F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9",pure_getters,keep_fargs=false,unsafe_comps,unsafe' | uglifyjs --mangle --output=$JSMIN
 
 before_deploy:
   - rm .gitignore
@@ -24,6 +26,8 @@ before_deploy:
   - rm elm.json
   - rm -rf src
   - rm -rf elm-stuff
+  - rm -rf $JS
+  - sed -i 's/'$JS'/'$JSMIN'/g' index.html
 
 deploy:
   provider: pages
@@ -32,5 +36,3 @@ deploy:
   keep-history: true
   on:
     branch: master
-
-
