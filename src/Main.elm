@@ -1,7 +1,9 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Bingo.Card as Card
+import Bingo.Card.Load as Card
 import Bingo.Card.Model exposing (Card)
+import Bingo.Card.Save as Card
 import Bingo.Editor as Editor
 import Bingo.Editor.Messages as Editor
 import Bingo.Editor.Model exposing (Editor)
@@ -10,10 +12,25 @@ import Bingo.Viewer.Messages as Viewer
 import Bingo.Viewer.Model exposing (Viewer)
 import Browser
 import Browser.Navigation as Navigation
+import Debug
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Html5.DragDrop as DragDrop
+import Json.Encode
 import Url exposing (Url)
+import Url.Builder
+
+
+port decompress : String -> Cmd msg
+
+
+port compress : String -> Cmd msg
+
+
+port decompressed : (String -> msg) -> Sub msg
+
+
+port compressed : (String -> msg) -> Sub msg
 
 
 type Page
@@ -22,8 +39,9 @@ type Page
 
 
 type Msg
-    = Edit Card
-    | View Card
+    = NoOp
+    | Compress String
+    | Decompress String
     | EditMsg Editor.Msg
     | ViewMsg Viewer.Msg
 
@@ -35,7 +53,7 @@ type alias Model =
 
 
 type alias Flags =
-    {}
+    { initial : Maybe String }
 
 
 main =
@@ -51,45 +69,76 @@ main =
 
 init : Flags -> Url -> Navigation.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( { page = E (Editor.init Card.init)
+    let
+        card =
+            flags.initial
+                |> Maybe.andThen loadCard
+                |> Maybe.withDefault Card.init
+    in
+    ( { page = E (Editor.init url.fragment card)
       , key = key
       }
     , Cmd.none
     )
 
 
+loadCard : String -> Maybe Card
+loadCard card =
+    card |> Card.load |> Result.toMaybe
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Sub.batch
+        [ compressed (EditMsg << Editor.UpdateCode)
+        , decompressed (\raw -> Editor.Load (loadCard raw |> Maybe.withDefault Card.init) |> EditMsg)
+        ]
 
 
 onUrlRequest : Browser.UrlRequest -> Msg
 onUrlRequest urlRequest =
-    Edit Card.init
+    NoOp
 
 
 onUrlChange : Url -> Msg
 onUrlChange url =
-    Edit Card.init
+    url.fragment |> Maybe.map (\value -> Decompress value) |> Maybe.withDefault NoOp
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Edit card ->
-            ( { model | page = E (Editor.init card) }, Cmd.none )
-
-        View card ->
-            ( { model | page = V (Viewer.init card) }, Cmd.none )
-
         EditMsg msgEditor ->
             case model.page of
                 E editor ->
                     let
                         ( newEditor, editorMsg ) =
                             Editor.update msgEditor editor
+
+                        updateCode =
+                            if newEditor.card /= editor.card then
+                                [ compress (newEditor.card |> Card.save) ]
+
+                            else
+                                []
+
+                        changeUrl =
+                            case msgEditor of
+                                Editor.UpdateCode code ->
+                                    [ codeUrl code |> Navigation.pushUrl model.key ]
+
+                                _ ->
+                                    []
                     in
-                    ( { model | page = E newEditor }, Cmd.map EditMsg editorMsg )
+                    ( { model | page = E newEditor }
+                    , Cmd.batch
+                        (List.concat
+                            [ [ Cmd.map EditMsg editorMsg ]
+                            , updateCode
+                            , changeUrl
+                            ]
+                        )
+                    )
 
                 V viewer ->
                     ( model, Cmd.none )
@@ -105,6 +154,20 @@ update msg model =
                             Viewer.update msgViewer viewer
                     in
                     ( { model | page = V newViewer }, Cmd.map ViewMsg viewerMsg )
+
+        Compress raw ->
+            ( model, compress raw )
+
+        Decompress compact ->
+            ( model, decompress compact )
+
+        NoOp ->
+            ( model, Cmd.none )
+
+
+codeUrl : String -> String
+codeUrl code =
+    Url.Builder.custom Url.Builder.Relative [] [] (Just code)
 
 
 view : Model -> Browser.Document Msg

@@ -15,7 +15,8 @@ type DropTarget
 
 
 type alias Editor =
-    { card : Card
+    { code : Maybe String
+    , card : Card
     , newValueInput : String
     , dragDrop : DragDrop.Model Value DropTarget
     }

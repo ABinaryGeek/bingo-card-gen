@@ -1,21 +1,14 @@
 module Bingo.Card.Save exposing (save)
 
-import Base64
 import Bingo.Card.Layout exposing (Layout)
 import Bingo.Card.Model exposing (Card)
 import Bingo.Model exposing (Value)
 import Json.Encode as Json
-import UrlBase64
-
-
-b64e : String -> Result String String
-b64e =
-    UrlBase64.encode (Base64.encode >> Result.Ok)
 
 
 save : Card -> String
 save card =
-    encodeCard card |> Json.encode 0 |> b64e |> Result.withDefault ""
+    encodeCard card |> Json.encode 0
 
 
 encodeCard : Card -> Json.Value

@@ -23,9 +23,10 @@ import Random.List
 import Task
 
 
-init : Card -> Editor
-init card =
-    { card = card
+init : Maybe String -> Card -> Editor
+init code card =
+    { code = code
+    , card = card
     , newValueInput = ""
     , dragDrop = DragDrop.init
     }
@@ -98,6 +99,12 @@ update msg model =
             , Cmd.none
             )
 
+        Load card ->
+            ( { model | card = card }, Cmd.none )
+
+        UpdateCode code ->
+            ( { model | code = Just code }, Cmd.none )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -123,7 +130,7 @@ view model =
                 )
     in
     Html.div [ Attr.class "editor" ]
-        [ controls model.card
+        [ controls model.code model.card
         , ValueList.view attributes model.card model.newValueInput (drag model.dragDrop)
         , Html.div [ Attr.class "container" ] [ Card.view attributes model.card ]
         ]
@@ -147,8 +154,8 @@ squareAttributes highlighted name =
     dragDropTarget name ++ highlightedClass name highlighted
 
 
-controls : Card -> Html Msg
-controls card =
+controls : Maybe String -> Card -> Html Msg
+controls code card =
     Html.div [ Attr.class "container" ]
         [ Html.h2 [] [ Html.text "Settings" ]
         , Html.form
@@ -161,24 +168,31 @@ controls card =
         , Html.h2 [] [ Html.text "Share" ]
         , Html.form
             [ Attr.class "pure-form pure-form-stacked", Html.onSubmit NoOp ]
-            [ linkView card
-            , linkEdit card
-            ]
+            (code
+                |> Maybe.map
+                    (\c ->
+                        [ linkView c
+
+                        --, linkEdit c
+                        ]
+                    )
+                |> Maybe.withDefault []
+            )
         ]
 
 
-linkEdit : Card -> Html Msg
-linkEdit card =
-    linkView card
+linkEdit : String -> Html Msg
+linkEdit code =
+    linkView code
 
 
-linkView : Card -> Html Msg
-linkView card =
+linkView : String -> Html Msg
+linkView code =
     Html.div [ Attr.class "change-name pure-control-group" ]
-        [ Html.label [ Attr.for "view-field" ] [ Html.text "View Link: " ]
+        [ Html.label [ Attr.for "view-field" ] [ Html.text "Edit Link: " ]
         , Html.input
             [ Attr.id "view-field"
-            , Attr.value ("http://localhost:8000/#?view=" ++ Card.save card)
+            , Attr.value ("https://abinarygeek.github.io/bingo-card-gen/#" ++ code)
             , Attr.readonly True
             ]
             []
