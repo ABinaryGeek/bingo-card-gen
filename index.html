@@ -68,6 +68,10 @@
           }
         });
       });
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("offline.js");
+      }
     </script>
   </body>
 </html>
