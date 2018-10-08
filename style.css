@@ -29,8 +29,7 @@
 .container {
   flex-grow: 1;
   margin: 1em;
-  min-width: 20em;
-  flex-basis: 20em;
+  flex-basis: 10em;
   background-color: #efefef;
   padding: 1em;
 }
@@ -103,6 +102,11 @@ form div {
   display: flex;
   margin: 0;
   padding: 0;
+}
+
+.pure-form .form-row .pure-input-1 {
+  flex-grow: 1;
+  min-width: 1em;
 }
 
 .pure-form .form-row button {
