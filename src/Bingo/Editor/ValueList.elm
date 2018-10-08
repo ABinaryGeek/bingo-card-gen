@@ -63,6 +63,31 @@ add card newValueInput =
         ]
 
 
+addValueControl : String -> Card -> List (Html Msg)
+addValueControl input card =
+    [ Html.div [ Attr.class "add-value pure-control-group" ]
+        [ Html.label [ Attr.for "add-value-field" ] [ Html.text "Square Text:" ]
+        , Html.div [ Attr.class "form-row" ]
+            [ Html.input
+                [ Attr.value input
+                , Attr.id "add-value-field"
+                , Attr.class "pure-input-1"
+                , Html.onInput UpdateNewValueField
+                ]
+                []
+            , Html.button
+                [ Html.onClick AddNewValue
+                , Attr.class "pure-button pure-button-primary"
+                , Attr.disabled (not (Card.couldAdd input card))
+                ]
+                [ Icon.plus
+                , Html.text " Add"
+                ]
+            ]
+        ]
+    ]
+
+
 commonlyAdded : Card -> Html Msg
 commonlyAdded card =
     Html.div [ Attr.class "container" ]
@@ -114,31 +139,6 @@ view attributes card drag =
         , valueList
         , binView drag
         ]
-
-
-addValueControl : String -> Card -> List (Html Msg)
-addValueControl input card =
-    [ Html.div [ Attr.class "add-value pure-control-group" ]
-        [ Html.label [ Attr.for "add-value-field" ] [ Html.text "Square Text:" ]
-        , Html.div [ Attr.class "form-row" ]
-            [ Html.input
-                [ Attr.value input
-                , Attr.id "add-value-field"
-                , Attr.class "pure-input"
-                , Html.onInput UpdateNewValueField
-                ]
-                []
-            , Html.button
-                [ Html.onClick AddNewValue
-                , Attr.class "pure-button pure-button-primary"
-                , Attr.disabled (not (Card.couldAdd input card))
-                ]
-                [ Icon.plus
-                , Html.text " Add"
-                ]
-            ]
-        ]
-    ]
 
 
 randomiseOrder : List Value -> Html Msg
