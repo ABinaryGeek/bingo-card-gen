@@ -12,9 +12,11 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css"
       integrity="sha256-oSrCnRYXvHG31SBifqP2PM1uje7SJUyX0nTwO2RJV54="
       crossorigin="anonymous" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pure/1.0.0/pure-nr-min.css"
-      integrity="sha256-ebOv3nz5uCcWnWJtNHFqHbPtTmMjDKIZrobk3g2pYig="
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pure/1.0.0/pure-min.css"
+      integrity="sha256-Q0zCrUs2IfXWYx0uMKJfG93CvF6oVII21waYsAV4/8Q="
       crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css?family=Suez+One|Varela+Round"
+      rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
 
     <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/solid.js"
@@ -29,49 +31,65 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"
       integrity="sha256-nRoO8HoupfqozUr7YKBRgHXmdx40Hl/04OSBzv7e7L8="
       crossorigin="anonymous"></script>
-    <script src="html2canvas.min.js"></script>
+    <script src="d3plus-text.full.min.js"></script>
+    <script src="saveSvgAsPng.js"></script>
     <script src="bingo.js"></script>
   </head>
 
   <body>
     <script>
       const clipboard = new ClipboardJS(".copy-button");
-      const hash = window.location.hash;
-      let initial;
-      if (hash) {
-        initial = LZString.decompressFromEncodedURIComponent(hash.substring(1));
-      } else {
-        initial = null;
-      }
-      const app = Elm.Main.init({flags: {initial: initial}});
-      app.ports.compress.subscribe(function(data) {
-        app.ports.compressed.send(LZString.compressToEncodedURIComponent(data));
+      const app = Elm.Main.init();
+      app.ports.textBoxesOut.subscribe(function(data) {
+        new d3plus.TextBox()
+            .data(data.squares)
+            .fontResize(true)
+            .verticalAlign("middle")
+            .textAnchor("middle")
+            .fontWeight(900)
+            .fontFamily(["Varela Round", "sans-serif"])
+            .select(".bingo-card .text-overlay .values")
+            .render();
+        new d3plus.TextBox()
+            .data([data.title])
+            .fontResize(true)
+            .verticalAlign("middle")
+            .textAnchor("middle")
+            .fontMax(100)
+            .fontFamily("Suez One", "serif")
+            .select(".bingo-card .text-overlay .titles")
+            .render();
       });
-      app.ports.decompress.subscribe(function(data) {
-        app.ports.decompressed.send(LZString.decompressFromEncodedURIComponent(data));
-      });
-      app.ports.save.subscribe(function(name) {
-        html2canvas(
-          document.querySelector(".bingo-card"),
-          { scale: 3 }
-        ).then(function(canvas) {
-          const url = canvas.toDataURL("image/png");
-          const link = document.createElement("a");
-          if (typeof link.download === "string") {
-            link.href = url;
-            link.download = name + ".png"
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          } else {
-            window.open(url, "_blank");
+      app.ports.codeOut.subscribe(function(code) {
+        let result;
+        if (code.compressed) {
+          try {
+            result = {
+              compressed: false,
+              code: JSON.parse(LZString.decompressFromEncodedURIComponent(code.code))
+            };
+          } catch (e) {
+            result = {
+              error: e.message
+            }
           }
-        });
+        } else {
+          result = {
+            compressed: true,
+            code: LZString.compressToEncodedURIComponent(JSON.stringify(code.code))
+          };
+        }
+        app.ports.codeIn.send(result);
+      });
+      app.ports.saveOut.subscribe(function(name) {
+        saveSvgAsPng(document.querySelectorAll(".bingo-card")[0], name + ".png");
       });
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-          .register("offline.js");
+        navigator.serviceWorker.register("offline.js");
       }
+      document.addEventListener("dragstart", function(event) {
+        event.dataTransfer.setData("text/plain", "");
+      }, false);
     </script>
   </body>
 </html>

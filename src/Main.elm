@@ -1,9 +1,11 @@
 port module Main exposing (main)
 
 import Bingo.Card as Card
+import Bingo.Card.Code as Code
 import Bingo.Card.Load as Card
 import Bingo.Card.Model exposing (Card)
 import Bingo.Card.Save as Card
+import Bingo.Card.TextBox as TextBox
 import Bingo.Editor as Editor
 import Bingo.Editor.Messages as Editor
 import Bingo.Editor.Model exposing (Editor)
@@ -16,24 +18,21 @@ import Debug
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Html5.DragDrop as DragDrop
-import Json.Encode
+import Json.Encode as Json
 import Url exposing (Url)
 import Url.Builder
 
 
-port decompress : String -> Cmd msg
+port codeOut : Code.CodeOut msg
 
 
-port compress : String -> Cmd msg
+port codeIn : (Json.Value -> msg) -> Sub msg
 
 
-port decompressed : (String -> msg) -> Sub msg
+port saveOut : Editor.SaveOut msg
 
 
-port compressed : (String -> msg) -> Sub msg
-
-
-port save : String -> Cmd msg
+port textBoxesOut : TextBox.TextBoxesOut msg
 
 
 type Page
@@ -43,8 +42,7 @@ type Page
 
 type Msg
     = NoOp
-    | Compress String
-    | Decompress String
+    | UrlChange (Maybe Code.CompressedCode)
     | EditMsg Editor.Msg
     | ViewMsg Viewer.Msg
 
@@ -53,10 +51,6 @@ type alias Model =
     { page : Page
     , key : Navigation.Key
     }
-
-
-type alias Flags =
-    { initial : Maybe String }
 
 
 main =
@@ -70,32 +64,22 @@ main =
         }
 
 
-init : Flags -> Url -> Navigation.Key -> ( Model, Cmd Msg )
-init flags url key =
+init : {} -> Url -> Navigation.Key -> ( Model, Cmd Msg )
+init _ url key =
     let
-        card =
-            flags.initial
-                |> Maybe.andThen loadCard
-                |> Maybe.withDefault Card.init
+        ( editor, cmd ) =
+            Editor.init codeOut textBoxesOut url.fragment
     in
-    ( { page = E (Editor.init url.fragment card)
+    ( { page = E editor
       , key = key
       }
-    , Cmd.none
+    , cmd |> Cmd.map EditMsg
     )
-
-
-loadCard : String -> Maybe Card
-loadCard card =
-    card |> Card.load |> Result.toMaybe
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ compressed (EditMsg << Editor.UpdateCode)
-        , decompressed (\raw -> Editor.Load (loadCard raw |> Maybe.withDefault Card.init) |> EditMsg)
-        ]
+    Editor.subscriptions codeIn |> Sub.map EditMsg
 
 
 onUrlRequest : Browser.UrlRequest -> Msg
@@ -105,7 +89,7 @@ onUrlRequest urlRequest =
 
 onUrlChange : Url -> Msg
 onUrlChange url =
-    url.fragment |> Maybe.map (\value -> Decompress value) |> Maybe.withDefault NoOp
+    UrlChange url.fragment
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -116,34 +100,10 @@ update msg model =
                 E editor ->
                     let
                         ( newEditor, editorMsg ) =
-                            Editor.update msgEditor editor
-
-                        updateCode =
-                            if newEditor.card /= editor.card then
-                                [ compress (newEditor.card |> Card.save) ]
-
-                            else
-                                []
-
-                        changeUrl =
-                            case msgEditor of
-                                Editor.UpdateCode code ->
-                                    [ codeUrl code |> Navigation.pushUrl model.key ]
-
-                                Editor.Save ->
-                                    [ save editor.card.name ]
-
-                                _ ->
-                                    []
+                            Editor.update saveOut codeOut textBoxesOut model.key msgEditor editor
                     in
                     ( { model | page = E newEditor }
-                    , Cmd.batch
-                        (List.concat
-                            [ [ Cmd.map EditMsg editorMsg ]
-                            , updateCode
-                            , changeUrl
-                            ]
-                        )
+                    , Cmd.map EditMsg editorMsg
                     )
 
                 V viewer ->
@@ -161,19 +121,22 @@ update msg model =
                     in
                     ( { model | page = V newViewer }, Cmd.map ViewMsg viewerMsg )
 
-        Compress raw ->
-            ( model, compress raw )
+        UrlChange maybeCode ->
+            case model.page of
+                E editor ->
+                    let
+                        ( newEditor, editorMsg ) =
+                            Editor.onChangeUrl codeOut textBoxesOut maybeCode editor
+                    in
+                    ( { model | page = E newEditor }
+                    , Cmd.map EditMsg editorMsg
+                    )
 
-        Decompress compact ->
-            ( model, decompress compact )
+                V viewer ->
+                    ( model, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
-
-
-codeUrl : String -> String
-codeUrl code =
-    Url.Builder.custom Url.Builder.Relative [] [] (Just code)
 
 
 view : Model -> Browser.Document Msg

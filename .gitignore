@@ -1,6 +1,9 @@
+# IDE files
+.idea/
 # elm-package generated files
 elm-stuff
 # elm-repl generated files
 repl-temp-*
 # compiled
 bingo.js
+

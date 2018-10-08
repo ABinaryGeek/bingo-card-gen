@@ -2,27 +2,20 @@ module Bingo.Icon exposing
     ( copy
     , image
     , plus
+    , questionCircle
     , random
     , save
+    , timesCircle
+    , trash
     )
 
 import Html exposing (Html)
 import Html.Attributes as Html
 
 
-random : Html msg
-random =
-    icon "random"
-
-
-plus : Html msg
-plus =
-    icon "plus"
-
-
-save : Html msg
-save =
-    icon "save"
+copy : Html msg
+copy =
+    icon "copy"
 
 
 image : Html msg
@@ -30,9 +23,38 @@ image =
     icon "image"
 
 
-copy : Html msg
-copy =
-    icon "copy"
+plus : Html msg
+plus =
+    icon "plus"
+
+
+questionCircle : Html msg
+questionCircle =
+    icon "question-circle"
+
+
+random : Html msg
+random =
+    icon "random"
+
+
+save : Html msg
+save =
+    icon "save"
+
+
+timesCircle : Html msg
+timesCircle =
+    icon "times-circle"
+
+
+trash : Html msg
+trash =
+    icon "trash"
+
+
+
+{- Private -}
 
 
 icon : String -> Html msg

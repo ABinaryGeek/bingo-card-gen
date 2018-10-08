@@ -3,8 +3,13 @@ module Bingo.Card.Layout exposing
     , amountOfSquares
     , freeSquareUsed
     , freeSquareValid
+    , gridSpace
     , gridStyles
+    , headerSpace
+    , padding
     , resize
+    , squarePos
+    , squareSpace
     , toggleFreeSquare
     )
 
@@ -65,3 +70,34 @@ freeSquareUsed layout =
 freeSquareValid : Layout -> Bool
 freeSquareValid layout =
     modBy 2 layout.size /= 0
+
+
+headerSpace : Float
+headerSpace =
+    150
+
+
+gridSpace : Float
+gridSpace =
+    1000
+
+
+padding : Float
+padding =
+    10
+
+
+squareSpace : Float -> Int -> Float
+squareSpace rowSpace size =
+    ((rowSpace - padding) / toFloat size) - padding
+
+
+squarePos : Int -> Int -> Float -> ( Float, Float )
+squarePos column row space =
+    let
+        spaceWithPadding =
+            space + padding
+    in
+    ( padding + toFloat column * spaceWithPadding
+    , padding + toFloat row * spaceWithPadding
+    )

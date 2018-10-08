@@ -1,4 +1,4 @@
-module Bingo.Card.Load exposing (load)
+module Bingo.Card.Load exposing (decodeCard)
 
 import Bingo.Card.Layout exposing (Layout)
 import Bingo.Card.Model exposing (Card)
@@ -6,26 +6,26 @@ import Bingo.Model exposing (Value)
 import Json.Decode as Json
 
 
-load : String -> Result String Card
-load card =
-    card |> (Json.decodeString decodeCard >> Result.mapError Json.errorToString)
-
-
-decodeCard : Json.Decoder Card
+decodeCard : Json.Value -> Result String Card
 decodeCard =
+    Json.decodeValue cardDecoder >> Result.mapError Json.errorToString
+
+
+cardDecoder : Json.Decoder Card
+cardDecoder =
     Json.map3 Card
         (Json.field "name" Json.string)
-        (Json.field "values" (Json.list decodeValue))
-        (Json.field "layout" decodeLayout)
+        (Json.field "values" (Json.list valueDecoder))
+        (Json.field "layout" layoutDecoder)
 
 
-decodeValue : Json.Decoder Value
-decodeValue =
+valueDecoder : Json.Decoder Value
+valueDecoder =
     Json.string
 
 
-decodeLayout : Json.Decoder Layout
-decodeLayout =
+layoutDecoder : Json.Decoder Layout
+layoutDecoder =
     Json.map2 Layout
         (Json.field "size" Json.int)
         (Json.field "free" Json.bool)

@@ -1,14 +1,9 @@
-module Bingo.Card.Save exposing (save)
+module Bingo.Card.Save exposing (encodeCard)
 
 import Bingo.Card.Layout exposing (Layout)
 import Bingo.Card.Model exposing (Card)
 import Bingo.Model exposing (Value)
 import Json.Encode as Json
-
-
-save : Card -> String
-save card =
-    encodeCard card |> Json.encode 0
 
 
 encodeCard : Card -> Json.Value

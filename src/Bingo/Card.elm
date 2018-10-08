@@ -6,9 +6,10 @@ module Bingo.Card exposing
     , remove
     , resize
     , setValues
+    , squareText
+    , squares
     , swap
-    , toggleFreeSquare
-    , view
+    ,  toggleFreeSquare
     )
 
 import Bingo.Card.Layout as Layout exposing (Layout)
@@ -88,26 +89,6 @@ swap this that card =
     { card | values = Utils.swap this that card.values }
 
 
-view : (Value -> List (Html.Attribute msg)) -> Card -> Html msg
-view squareAttributes card =
-    Html.div [ Html.class "bingo-card" ]
-        [ Html.h1 [] [ Html.text card.name ]
-        , grid squareAttributes card.layout card.values
-        , Html.span [ Html.class "footer" ]
-            [ Html.a [ Html.href "http://connieswap.tumblr.com/" ]
-                [ Html.text "connieswap.tumblr.com"
-                ]
-            ]
-        ]
-
-
-grid : (Value -> List (Html.Attribute msg)) -> Layout -> List Value -> Html msg
-grid squareAttributes layout values =
-    Html.ul
-        ([ Html.class "bingo-squares" ] ++ Layout.gridStyles layout)
-        (List.map (square squareAttributes) (squares layout values))
-
-
 squares : Layout -> List Value -> List Square
 squares layout values =
     let
@@ -140,14 +121,6 @@ squares layout values =
 
         False ->
             padded
-
-
-square : (Value -> List (Html.Attribute msg)) -> Square -> Html msg
-square attributes sq =
-    Html.li
-        ([ Html.class "bingo-square" ] ++ squareMap attributes sq)
-        [ Html.span [] [ Html.text (squareText sq) ]
-        ]
 
 
 squareMap : (Value -> List x) -> Square -> List x

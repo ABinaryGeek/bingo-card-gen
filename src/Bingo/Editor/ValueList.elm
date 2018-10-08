@@ -1,6 +1,7 @@
 module Bingo.Editor.ValueList exposing
-    ( view
-    , viewControls
+    ( add
+    , commonlyAdded
+    , view
     )
 
 import Bingo.Card as Card
@@ -49,13 +50,23 @@ addCommonButton card value =
         ]
 
 
-viewControls : Card -> String -> Html Msg
-viewControls card newValueInput =
+add : Card -> String -> Html Msg
+add card newValueInput =
+    Html.div []
+        [ Html.h2 [] [ Html.text "Add" ]
+        , Html.form
+            [ Attr.class "pure-form pure-form-stacked", Html.onSubmit NoOp ]
+            (List.concat
+                [ addValueControl newValueInput card
+                ]
+            )
+        ]
+
+
+commonlyAdded : Card -> Html Msg
+commonlyAdded card =
     Html.div [ Attr.class "container" ]
-        [ Html.h2 [] [ Html.text "Values" ]
-        , controls card newValueInput
-        , Html.hr [] []
-        , Html.h2 [] [ Html.text "Common" ]
+        [ Html.h2 [] [ Html.text "Commonly Added" ]
         , Html.ul
             [ Attr.class "pure-form" ]
             [ Html.div [ Attr.class "add-value pure-control-group" ]
@@ -67,54 +78,53 @@ viewControls card newValueInput =
 view : (Value -> List (Html.Attribute Msg)) -> Card -> Maybe Drag -> Html Msg
 view attributes card drag =
     let
-        amount =
-            Layout.amountOfSquares card.layout
+        valueList =
+            if List.length card.values == 0 then
+                Html.p [ Attr.class "no-values" ]
+                    [ Icon.questionCircle
+                    , Html.text " No values yet, try adding some."
+                    ]
 
-        ( used, unused ) =
-            Utils.split amount card.values
+            else
+                let
+                    amount =
+                        Layout.amountOfSquares card.layout
 
-        bin =
-            Maybe.map binView drag |> Maybe.withDefault (Html.span [] [])
+                    itemH =
+                        valueListItem attributes drag
 
-        itemH =
-            valueListItem attributes
+                    ( used, unused ) =
+                        Utils.split amount card.values
+                in
+                Html.ul
+                    [ Attr.class "values" ]
+                    (List.concat
+                        [ List.map (itemH True) used
+                        , List.map (itemH False) unused
+                        ]
+                    )
     in
     Html.div [ Attr.class "container" ]
         [ Html.h2 [] [ Html.text "Order" ]
-        , Html.p [] [ Html.text "You can drag and drop values to swap squares around, or delete them." ]
+        , Html.p [] [ Html.text "You can drag a value to another to swap squares or to the bottom to delete them." ]
         , Html.form
             [ Attr.class "pure-form pure-form-stacked", Html.onSubmit NoOp ]
             [ randomiseOrder card.values
             ]
-        , Html.ul
-            [ Attr.class "values" ]
-            (List.concat
-                [ List.map (itemH True) used
-                , List.map (itemH False) unused
-                ]
-            )
-        , bin
+        , valueList
+        , binView drag
         ]
-
-
-controls : Card -> String -> Html Msg
-controls card newValueInput =
-    Html.form
-        [ Attr.class "pure-form pure-form-stacked", Html.onSubmit NoOp ]
-        (List.concat
-            [ addValueControl newValueInput card
-            ]
-        )
 
 
 addValueControl : String -> Card -> List (Html Msg)
 addValueControl input card =
     [ Html.div [ Attr.class "add-value pure-control-group" ]
-        [ Html.label [ Attr.for "add-value-field" ] [ Html.text "Value:" ]
+        [ Html.label [ Attr.for "add-value-field" ] [ Html.text "Square Text:" ]
         , Html.div [ Attr.class "form-row" ]
             [ Html.input
                 [ Attr.value input
                 , Attr.id "add-value-field"
+                , Attr.class "pure-input"
                 , Html.onInput UpdateNewValueField
                 ]
                 []
@@ -156,11 +166,21 @@ randomiseOrder values =
         ]
 
 
-valueListItem : (Value -> List (Html.Attribute msg)) -> Bool -> Value -> Html msg
-valueListItem attributes used value =
+valueListItem : (Value -> List (Html.Attribute msg)) -> Maybe Drag -> Bool -> Value -> Html msg
+valueListItem attributes drag used value =
+    let
+        isDragged =
+            drag |> Maybe.map (\d -> d.draggedValue == value) |> Maybe.withDefault False
+    in
     Html.li []
         [ Html.span
-            ([ Attr.class "value", usedClass used ] ++ attributes value)
+            (Attr.classList
+                [ ( "value", True )
+                , ( "unused", not used )
+                , ( "dragged", isDragged )
+                ]
+                :: attributes value
+            )
             [ Html.text value ]
         ]
 
@@ -177,8 +197,11 @@ usedClass used =
         )
 
 
-binView : Drag -> Html Msg
+binView : Maybe Drag -> Html Msg
 binView drag =
     Html.div
-        ([ Attr.class "bin" ] ++ Html5.DragDrop.droppable DragDropMsg BinTarget)
-        [ Html.text "Delete" ]
+        ([ Attr.classList [ ( "bin", True ), ( "enabled", drag /= Nothing ) ]
+         ]
+            ++ Html5.DragDrop.droppable DragDropMsg BinTarget
+        )
+        [ Icon.trash ]
