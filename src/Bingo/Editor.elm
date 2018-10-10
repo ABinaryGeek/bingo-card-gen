@@ -5,6 +5,7 @@ module Bingo.Editor exposing
     , view
     )
 
+import Bingo.BaseUrl as BaseUrl exposing (BaseUrl)
 import Bingo.Card as Card
 import Bingo.Card.Code as Code
 import Bingo.Card.Layout as Layout exposing (Layout)
@@ -18,9 +19,11 @@ import Bingo.Editor.Model exposing (..)
 import Bingo.Editor.ValueList as ValueList
 import Bingo.Errors as Errors exposing (Errors)
 import Bingo.Icon as Icon
-import Bingo.Model exposing (Value)
+import Bingo.Messages as Messages
+import Bingo.Model exposing (..)
 import Bingo.Page as Page exposing (Page)
 import Bingo.Save as Save
+import Bingo.ShortUrl as ShortUrl exposing (ShortUrl)
 import Bingo.Utils as Utils
 import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
 import Browser.Dom as Dom
@@ -50,27 +53,29 @@ load codeOut textBoxesOut card =
     ( emptyEditorWithCard card, Card.onCardLoad textBoxesOut (Page.Edit card) )
 
 
-update : Save.Out Msg -> Code.Out Msg -> TextBox.TextBoxesOut Msg -> Navigation.Key -> Msg -> Editor -> ( Editor, Cmd Msg )
-update saveOut codeOut textBoxesOut key msg model =
+update : Save.Out Msg -> Code.Out Msg -> TextBox.TextBoxesOut Msg -> Navigation.Key -> Config -> BaseUrl -> Maybe Page.Reference -> Msg -> Editor -> ( Editor, Messages.Back, Cmd Msg )
+update saveOut codeOut textBoxesOut key config baseUrl reference msg model =
     let
-        ( editor, cmd ) =
-            internalUpdate saveOut key msg model
+        ( editor, backMessage, cmd ) =
+            internalUpdate saveOut key config baseUrl reference msg model
 
         card =
             editor.card
 
-        commands =
+        ( newEditor, commands ) =
             if card /= model.card then
-                Cmd.batch [ cmd, Card.onCardChange codeOut textBoxesOut (Page.Edit card) ]
+                ( { editor | editShortUrl = ShortUrl.Unknown, viewShortUrl = ShortUrl.Unknown }
+                , Cmd.batch [ cmd, Card.onCardChange codeOut textBoxesOut (Page.Edit card) ]
+                )
 
             else
-                cmd
+                ( editor, cmd )
     in
-    ( { editor | card = card }, commands )
+    ( { newEditor | card = card }, backMessage, commands )
 
 
-view : String -> Config -> Maybe Page.Reference -> Editor -> List (Html Msg)
-view origin config reference model =
+view : BaseUrl -> Config -> Maybe Page.Reference -> Editor -> List (Html Msg)
+view baseUrl config reference model =
     let
         dropTarget =
             DragDrop.getDropId model.dragDrop
@@ -104,7 +109,7 @@ view origin config reference model =
                      , Html.div [ Attr.class "container" ]
                         [ ValueList.add model.card model.newValueInput
                         , settings model.card
-                        , share origin reference
+                        , share baseUrl reference config.urlShortener model.viewShortUrl model.editShortUrl
                         ]
                      ]
                         ++ ValueList.commonlyAdded config.commonValues model.card
@@ -137,29 +142,32 @@ emptyEditorWithCard card =
     { card = card
     , newValueInput = ""
     , importOverlay = ImportOverlay.init
+    , viewShortUrl = ShortUrl.Unknown
+    , editShortUrl = ShortUrl.Unknown
     , dragDrop = DragDrop.init
     }
 
 
-internalUpdate : Save.Out Msg -> Navigation.Key -> Msg -> Editor -> ( Editor, Cmd Msg )
-internalUpdate saveOut key msg model =
+internalUpdate : Save.Out Msg -> Navigation.Key -> Config -> BaseUrl -> Maybe Page.Reference -> Msg -> Editor -> ( Editor, Messages.Back, Cmd Msg )
+internalUpdate saveOut key config baseUrl reference msg model =
     case msg of
         AddNewValue ->
             ( { model
                 | card = Card.add model.newValueInput model.card
                 , newValueInput = ""
               }
+            , Messages.NoBackMessage
             , Task.attempt (\_ -> NoOp) (Dom.focus "add-value-field")
             )
 
         AddGivenValue givenValue ->
-            ( { model | card = Card.add givenValue model.card }, Cmd.none )
+            ( { model | card = Card.add givenValue model.card }, Messages.NoBackMessage, Cmd.none )
 
         UpdateNewValueField newValue ->
-            ( { model | newValueInput = newValue }, Cmd.none )
+            ( { model | newValueInput = newValue }, Messages.NoBackMessage, Cmd.none )
 
         ChangeName name ->
-            ( { model | card = Card.changeName name model.card }, Cmd.none )
+            ( { model | card = Card.changeName name model.card }, Messages.NoBackMessage, Cmd.none )
 
         Resize sizeString ->
             let
@@ -174,15 +182,16 @@ internalUpdate saveOut key msg model =
             ( { model
                 | card = card
               }
+            , Messages.NoBackMessage
             , Cmd.none
             )
 
         ToggleFreeSquare ->
-            ( { model | card = Card.toggleFreeSquare model.card }, Cmd.none )
+            ( { model | card = Card.toggleFreeSquare model.card }, Messages.NoBackMessage, Cmd.none )
 
         Randomise { includeUnused } ->
             if includeUnused then
-                ( model, Random.generate Reorder (Random.List.shuffle model.card.values) )
+                ( model, Messages.NoBackMessage, Random.generate Reorder (Random.List.shuffle model.card.values) )
 
             else
                 let
@@ -193,6 +202,7 @@ internalUpdate saveOut key msg model =
                         Utils.split amount model.card.values
                 in
                 ( model
+                , Messages.NoBackMessage
                 , Random.generate Reorder
                     (Random.List.shuffle used
                         |> Random.map (\shuffled -> shuffled ++ unused)
@@ -200,13 +210,35 @@ internalUpdate saveOut key msg model =
                 )
 
         Reorder values ->
-            ( { model | card = Card.setValues values model.card }, Cmd.none )
+            ( { model | card = Card.setValues values model.card }, Messages.NoBackMessage, Cmd.none )
 
         Save ->
-            ( model, Save.save saveOut model.card.name )
+            ( model, Messages.NoBackMessage, Save.save saveOut model.card.name )
+
+        Shorten target ->
+            case config.urlShortener of
+                Just urlShortener ->
+                    ( updateShortUrl target ShortUrl.Requested model
+                    , Messages.NoBackMessage
+                    , ShortUrl.request urlShortener baseUrl reference target |> Cmd.map ShortUrlMsg
+                    )
+
+                Nothing ->
+                    ( model, Messages.NoBackMessage, Cmd.none )
 
         NoOp ->
-            ( model, Cmd.none )
+            ( model, Messages.NoBackMessage, Cmd.none )
+
+        ShortUrlMsg (ShortUrl.Response target response) ->
+            case response of
+                Ok shortUrl ->
+                    ( updateShortUrl target (ShortUrl.Known shortUrl) model, Messages.NoBackMessage, Cmd.none )
+
+                Err error ->
+                    ( updateShortUrl target ShortUrl.Unknown model
+                    , Messages.Error ("Error getting short url: " ++ Utils.httpErrorToString error)
+                    , Cmd.none
+                    )
 
         ImportOverlayMsg importOverlayMsg ->
             let
@@ -225,6 +257,7 @@ internalUpdate saveOut key msg model =
                 | importOverlay = importOverlay
                 , card = Card.addMany toAdd model.card
               }
+            , Messages.NoBackMessage
             , Cmd.none
             )
 
@@ -250,8 +283,19 @@ internalUpdate saveOut key msg model =
                 | dragDrop = dragDrop
                 , card = card
               }
+            , Messages.NoBackMessage
             , Cmd.none
             )
+
+
+updateShortUrl : ShortUrlTarget -> ShortUrl -> Editor -> Editor
+updateShortUrl target value model =
+    case target of
+        EditShortUrl ->
+            { model | editShortUrl = value }
+
+        ViewShortUrl ->
+            { model | viewShortUrl = value }
 
 
 drag : DragDrop.Model Value DropTarget -> Maybe Drag
@@ -285,8 +329,8 @@ settings card =
         ]
 
 
-share : String -> Maybe Page.Reference -> Html Msg
-share origin reference =
+share : BaseUrl -> Maybe Page.Reference -> Maybe String -> ShortUrl -> ShortUrl -> Html Msg
+share baseUrl reference urlShortener viewShortUrl editShortUrl =
     Html.div []
         [ Html.h2 [] [ Html.text "Share" ]
         , Html.form
@@ -294,8 +338,8 @@ share origin reference =
             (reference
                 |> Maybe.map
                     (\r ->
-                        [ linkView origin r
-                        , linkEdit origin r
+                        [ linkView viewShortUrl baseUrl urlShortener r
+                        , linkEdit editShortUrl baseUrl urlShortener r
                         , saveImage
                         ]
                     )
@@ -304,34 +348,66 @@ share origin reference =
         ]
 
 
-linkEdit : String -> Page.Reference -> Html Msg
-linkEdit origin reference =
-    copyableLink "Link To Edit: " "edit-link-field" origin (Page.referenceAsEdit reference)
+linkEdit : ShortUrl -> BaseUrl -> Maybe String -> Page.Reference -> Html Msg
+linkEdit shortUrl baseUrl urlShortener reference =
+    copyableLink EditShortUrl shortUrl "Link To Edit: " "edit-link-field" baseUrl urlShortener (Page.referenceAsEdit reference)
 
 
-linkView : String -> Page.Reference -> Html Msg
-linkView origin reference =
-    copyableLink "Link To View: " "view-link-field" origin (Page.referenceAsView reference)
+linkView : ShortUrl -> BaseUrl -> Maybe String -> Page.Reference -> Html Msg
+linkView shortUrl baseUrl urlShortener reference =
+    copyableLink ViewShortUrl shortUrl "Link To View: " "view-link-field" baseUrl urlShortener (Page.referenceAsView reference)
 
 
-copyableLink : String -> String -> String -> Page.Reference -> Html Msg
-copyableLink description id origin reference =
+copyableLink : ShortUrlTarget -> ShortUrl -> String -> String -> BaseUrl -> Maybe String -> Page.Reference -> Html Msg
+copyableLink shortUrlTarget shortUrl description id baseUrl urlShortener reference =
+    let
+        longUrl =
+            Page.externalUrl baseUrl (Just reference)
+
+        ( disabled, icon, url ) =
+            case shortUrl of
+                ShortUrl.Unknown ->
+                    ( False, Icon.cut, longUrl )
+
+                ShortUrl.Requested ->
+                    ( True, Icon.cog, "Generating..." )
+
+                ShortUrl.Known sUrl ->
+                    ( True, Icon.check, sUrl )
+
+        shortenButton =
+            if urlShortener /= Nothing then
+                [ Html.button
+                    [ Attr.class "shorten-button pure-button"
+                    , Html.onClick (Shorten shortUrlTarget)
+                    , Attr.disabled disabled
+                    , Attr.title "Get a short link for this card."
+                    ]
+                    [ icon ]
+                ]
+
+            else
+                []
+    in
     Html.div [ Attr.class "pure-control-group" ]
         [ Html.label [ Attr.for id ] [ Html.text description ]
         , Html.div [ Attr.class "form-row" ]
-            [ Html.input
+            ([ Html.input
                 [ Attr.id id
                 , Attr.class "pure-input-1"
-                , Attr.value (Page.externalUrl origin (Just reference))
+                , Attr.value url
                 , Attr.readonly True
                 ]
                 []
-            , Html.button
+             , Html.button
                 [ Attr.class "copy-button pure-button"
                 , Attr.attribute "data-clipboard-target" ("#" ++ id)
+                , Attr.title "Copy the link to this card."
                 ]
                 [ Icon.copy ]
-            ]
+             ]
+                ++ shortenButton
+            )
         ]
 
 

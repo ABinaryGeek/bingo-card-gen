@@ -6,13 +6,15 @@ import Json.Decode as Json
 
 
 type alias Config =
-    { commonValues : List Value
+    { urlShortener : Maybe String
+    , commonValues : List Value
     }
 
 
 init : Config
 init =
-    { commonValues = []
+    { urlShortener = Nothing
+    , commonValues = []
     }
 
 
@@ -27,5 +29,6 @@ load handle =
 
 configDecoder : Json.Decoder Config
 configDecoder =
-    Json.map Config
+    Json.map2 Config
+        (Json.maybe (Json.field "urlShortener" <| Json.string))
         (Json.field "commonValues" <| Json.list Json.string)

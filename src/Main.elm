@@ -1,5 +1,6 @@
 port module Main exposing (main)
 
+import Bingo.BaseUrl as BaseUrl exposing (BaseUrl)
 import Bingo.Card as Card
 import Bingo.Card.Code as Code
 import Bingo.Card.Model exposing (..)
@@ -52,7 +53,7 @@ type alias Model =
     , reference : Maybe Page.Reference
     , key : Navigation.Key
     , errors : Errors
-    , origin : String
+    , baseUrl : BaseUrl
     , config : Config
     }
 
@@ -94,15 +95,18 @@ init flags url key =
             , key = key
             , reference = reference
             , errors = Errors.init
-            , origin =
-                Url.toString
-                    { protocol = url.protocol
-                    , host = url.host
-                    , port_ = url.port_
-                    , path = ""
-                    , query = Nothing
-                    , fragment = Nothing
-                    }
+            , baseUrl =
+                { origin =
+                    Url.toString
+                        { protocol = url.protocol
+                        , host = url.host
+                        , port_ = url.port_
+                        , path = ""
+                        , query = Nothing
+                        , fragment = Nothing
+                        }
+                , path = String.split "/" url.path |> List.filter ((/=) "")
+                }
             , config = Config.init
             }
 
@@ -147,7 +151,23 @@ update msg model =
         EditMsg msgEditor ->
             case model.page of
                 E editor ->
-                    Editor.update saveOut codeOut textBoxesOut model.key msgEditor editor |> fromEditor model
+                    case Editor.update saveOut codeOut textBoxesOut model.key model.config model.baseUrl model.reference msgEditor editor of
+                        ( newEditor, backMessage, editorMsg ) ->
+                            let
+                                errors =
+                                    case backMessage of
+                                        Error message ->
+                                            Errors.add message model.errors
+
+                                        _ ->
+                                            model.errors
+                            in
+                            ( { model
+                                | page = E newEditor
+                                , errors = errors
+                              }
+                            , Cmd.map EditMsg editorMsg
+                            )
 
                 V viewer ->
                     ( model, Cmd.none )
@@ -218,7 +238,7 @@ view model =
             case model.page of
                 E editor ->
                     ( "Editing: " ++ editor.card.name
-                    , Editor.view model.origin model.config model.reference editor |> List.map (Html.map EditMsg)
+                    , Editor.view model.baseUrl model.config model.reference editor |> List.map (Html.map EditMsg)
                     )
 
                 V viewer ->
@@ -256,18 +276,11 @@ onChangeUrl url oldModel =
                 ( model, Cmd.none )
 
         Nothing ->
-            Editor.init codeOut textBoxesOut |> fromEditor model
-
-
-fromEditor : Model -> ( Editor, Cmd Editor.Msg ) -> ( Model, Cmd Msg )
-fromEditor model pair =
-    let
-        ( editor, editorMsg ) =
-            pair
-    in
-    ( { model | page = E editor }
-    , Cmd.map EditMsg editorMsg
-    )
+            case Editor.init codeOut textBoxesOut of
+                ( editor, editorMsg ) ->
+                    ( { model | page = E editor }
+                    , Cmd.map EditMsg editorMsg
+                    )
 
 
 fromViewer : Model -> ( Viewer, Cmd Viewer.Msg ) -> ( Model, Cmd Msg )

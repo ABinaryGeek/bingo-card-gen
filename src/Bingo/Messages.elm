@@ -1,4 +1,4 @@
-module Bingo.Messages exposing (Msg(..))
+module Bingo.Messages exposing (Back(..), Msg(..))
 
 import Bingo.Card.Code as Code
 import Bingo.Config as Config exposing (Config)
@@ -20,3 +20,8 @@ type Msg
     | ViewMsg Viewer.Msg
     | PageMsg Page.Msg
     | ErrorMsg Errors.Msg
+
+
+type Back
+    = Error Errors.Error
+    | NoBackMessage

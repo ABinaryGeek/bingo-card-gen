@@ -17,6 +17,7 @@ module Bingo.Page exposing
     , url
     )
 
+import Bingo.BaseUrl as BaseUrl exposing (BaseUrl)
 import Bingo.Card.Code as Code
 import Bingo.Card.Model as Card exposing (Card)
 import Bingo.Utils as Utils
@@ -77,14 +78,14 @@ load outPort reference =
 -}
 url : Maybe Reference -> String
 url reference =
-    urlBuilder Url.Builder.Relative reference
+    urlBuilder Url.Builder.Relative [] reference
 
 
 {-| Generate an absolute URL for a reference.
 -}
-externalUrl : String -> Maybe Reference -> String
-externalUrl origin reference =
-    urlBuilder (Url.Builder.CrossOrigin origin) reference
+externalUrl : BaseUrl -> Maybe Reference -> String
+externalUrl baseUrl reference =
+    urlBuilder (Url.Builder.CrossOrigin baseUrl.origin) baseUrl.path reference
 
 
 {-| Generate a reference from a URL.
@@ -184,9 +185,9 @@ referenceAsView reference =
 {- Private -}
 
 
-urlBuilder : Url.Builder.Root -> Maybe Reference -> String
-urlBuilder root reference =
-    Url.Builder.custom root [] [] (Maybe.map fragment reference)
+urlBuilder : Url.Builder.Root -> List String -> Maybe Reference -> String
+urlBuilder root dirs reference =
+    Url.Builder.custom root dirs [] (Maybe.map fragment reference)
 
 
 fragment : Reference -> String

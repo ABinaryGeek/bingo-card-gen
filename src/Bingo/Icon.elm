@@ -1,5 +1,8 @@
 module Bingo.Icon exposing
-    ( copy
+    ( check
+    , cog
+    , copy
+    , cut
     , edit
     , fileImport
     , github
@@ -15,11 +18,27 @@ module Bingo.Icon exposing
 
 import Html exposing (Html)
 import Html.Attributes as Html
+import Svg.Attributes as Svg
+
+
+check : Html msg
+check =
+    solidIcon "check"
+
+
+cog : Html msg
+cog =
+    animatedIcon "fas" "spinner"
 
 
 copy : Html msg
 copy =
     solidIcon "copy"
+
+
+cut : Html msg
+cut =
+    solidIcon "cut"
 
 
 edit : Html msg
@@ -81,9 +100,14 @@ trash =
 {- Private -}
 
 
+animatedIcon : String -> String -> Html msg
+animatedIcon set name =
+    Html.span [ Svg.class (set ++ " fa-" ++ name ++ " fa-spin") ] []
+
+
 icon : String -> String -> Html msg
 icon set name =
-    Html.span [ Html.class (set ++ " fa-" ++ name) ] []
+    Html.span [ Svg.class (set ++ " fa-" ++ name) ] []
 
 
 solidIcon : String -> Html msg
