@@ -71,8 +71,9 @@
             }
           }
         }
-        console.log(flags);
+
         const app = Elm.Main.init({ flags: flags });
+
         app.ports.codeOut.subscribe(function(code) {
           if (code.compressed) {
             try {
@@ -88,8 +89,21 @@
           code.compressed = !code.compressed;
           app.ports.codeIn.send(code);
         });
+
         app.ports.saveOut.subscribe(function(name) {
-          saveSvgAsPng(document.querySelectorAll(".bingo-card")[0], name + ".png");
+          saveSvgAsPng(document.querySelectorAll(".bingo-card")[0], name + ".png", {
+            fonts: [
+              {
+                text: "@font-face{font-family:'Varela Round';src:url(https://fonts.gstatic.com/s/varelaround/v10/w8gdH283Tvk__Lua32TysjIfp8uP.woff2) format('woff2')}",
+                url: "https://fonts.gstatic.com/s/varelaround/v10/w8gdH283Tvk__Lua32TysjIfp8uP.woff2",
+                format: "woff2"
+              },
+              {
+                text: "@font-face{font-family:'Suez One';src:url(https://fonts.gstatic.com/s/suezone/v2/taiJGmd_EZ6rqscQgOFOmos.woff2) format('woff2')}",
+                url: "https://fonts.gstatic.com/s/suezone/v2/taiJGmd_EZ6rqscQgOFOmos.woff2",
+                format: "woff2"}
+            ]
+          });
         });
 
         document.addEventListener("dragstart", function(event) {
