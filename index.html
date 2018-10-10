@@ -58,7 +58,7 @@
               compressed: false
             };
             if (parts.length > 1) {
-              flags.sideCar = parseInt(parts[0], 10);
+              flags.sideCar = '"' + parts[0] + '"';
               parts = parts.slice(1);
             }
             flags.code = decode(parts.join("#"));
