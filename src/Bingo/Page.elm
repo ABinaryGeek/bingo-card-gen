@@ -103,11 +103,11 @@ referenceFromFragment fragmentString =
             Utils.partition "#" fragmentString
 
         stampsResult =
-            stampsString |> Maybe.map (Json.decodeString Stamps.decoder)
+            stampsString |> Maybe.map Stamps.decodeString
     in
     case stampsResult of
         Just stamps ->
-            stamps |> Result.map (\s -> ViewR s givenCode) |> Result.mapError Json.errorToString
+            Ok (ViewR stamps givenCode)
 
         Nothing ->
             Ok (EditR givenCode)
@@ -196,7 +196,7 @@ fragment reference =
             c
 
         ViewR stamps c ->
-            (Stamps.encode stamps |> Json.Encode.encode 0) ++ "#" ++ c
+            Stamps.encodeString stamps ++ "#" ++ c
 
 
 inboundCode : Code.Msg -> Msg
