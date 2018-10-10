@@ -20,22 +20,6 @@ import Html.Keyed as HtmlK
 import Html5.DragDrop
 
 
-commonValues : List String
-commonValues =
-    [ "Singing"
-    , "Crying"
-    , "Singing while crying"
-    , "A phone is destroyed"
-    , "A drill is invoked"
-    , "Ears/noses are wiggled"
-    , "Stevonnie"
-    , "Non-Stevonnie fusion"
-    , "Wolf is a good boy"
-    , "Foreheads touched"
-    , "Lapis uses a new nickname for Connie"
-    ]
-
-
 addCommonButton : Card -> String -> Html Msg
 addCommonButton card value =
     Html.li [ Attr.class "common-values" ]
@@ -100,14 +84,19 @@ importValuesControl =
         ]
 
 
-commonlyAdded : Card -> Html Msg
-commonlyAdded card =
-    Html.div [ Attr.class "container" ]
-        [ Html.h2 [] [ Html.text "Commonly Added" ]
-        , Html.ul
-            [ Attr.class "pure-form" ]
-            [ Html.div [ Attr.class "add-value pure-control-group" ]
-                (List.map (addCommonButton card) commonValues)
+commonlyAdded : List Value -> Card -> List (Html Msg)
+commonlyAdded commonValues card =
+    if List.isEmpty commonValues then
+        []
+
+    else
+        [ Html.div [ Attr.class "container" ]
+            [ Html.h2 [] [ Html.text "Commonly Added" ]
+            , Html.ul
+                [ Attr.class "pure-form" ]
+                [ Html.div [ Attr.class "add-value pure-control-group" ]
+                    (List.map (addCommonButton card) commonValues)
+                ]
             ]
         ]
 

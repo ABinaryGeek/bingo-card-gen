@@ -11,6 +11,7 @@ import Bingo.Card.Layout as Layout exposing (Layout)
 import Bingo.Card.Model exposing (Card)
 import Bingo.Card.TextBox as TextBox
 import Bingo.Card.View as Card
+import Bingo.Config as Config exposing (Config)
 import Bingo.Editor.ImportOverlay as ImportOverlay exposing (ImportOverlay)
 import Bingo.Editor.Messages exposing (..)
 import Bingo.Editor.Model exposing (..)
@@ -68,8 +69,8 @@ update saveOut codeOut textBoxesOut key msg model =
     ( { editor | card = card }, commands )
 
 
-view : String -> Maybe Page.Reference -> Editor -> List (Html Msg)
-view origin reference model =
+view : String -> Config -> Maybe Page.Reference -> Editor -> List (Html Msg)
+view origin config reference model =
     let
         dropTarget =
             DragDrop.getDropId model.dragDrop
@@ -99,14 +100,15 @@ view origin reference model =
                     ]
                 , Html.div
                     [ Attr.class "controls" ]
-                    [ ValueList.view attributes model.card (drag model.dragDrop)
-                    , Html.div [ Attr.class "container" ]
+                    ([ ValueList.view attributes model.card (drag model.dragDrop)
+                     , Html.div [ Attr.class "container" ]
                         [ ValueList.add model.card model.newValueInput
                         , settings model.card
                         , share origin reference
                         ]
-                    , ValueList.commonlyAdded model.card
-                    ]
+                     ]
+                        ++ ValueList.commonlyAdded config.commonValues model.card
+                    )
                 ]
           ]
         , ImportOverlay.view model.importOverlay |> List.map (Html.map ImportOverlayMsg)

@@ -4,6 +4,7 @@ import Bingo.Card as Card
 import Bingo.Card.Code as Code
 import Bingo.Card.Model exposing (..)
 import Bingo.Card.TextBox as TextBox
+import Bingo.Config as Config exposing (Config)
 import Bingo.Editor as Editor
 import Bingo.Editor.Messages as Editor
 import Bingo.Editor.Model exposing (Editor)
@@ -21,6 +22,7 @@ import Debug
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Html5.DragDrop as DragDrop
+import Http
 import Json.Encode as Json
 import Url exposing (Url)
 import Url.Builder
@@ -51,6 +53,7 @@ type alias Model =
     , key : Navigation.Key
     , errors : Errors
     , origin : String
+    , config : Config
     }
 
 
@@ -100,6 +103,7 @@ init flags url key =
                     , query = Nothing
                     , fragment = Nothing
                     }
+            , config = Config.init
             }
 
         flagsError =
@@ -119,7 +123,7 @@ init flags url key =
         model =
             { almostModel | errors = Errors.addMany (List.filterMap identity errors) almostModel.errors }
     in
-    ( model, cmd )
+    ( model, Cmd.batch [ cmd, Config.load LoadConfig ] )
 
 
 subscriptions : Model -> Sub Msg
@@ -167,6 +171,18 @@ update msg model =
                 Browser.External url ->
                     ( model, Navigation.load url )
 
+        LoadConfig result ->
+            case result of
+                Ok config ->
+                    ( { model | config = config }, Cmd.none )
+
+                Err httpError ->
+                    let
+                        message =
+                            "Error while getting configuration: \n" ++ Utils.httpErrorToString httpError
+                    in
+                    ( { model | errors = Errors.add message model.errors }, Cmd.none )
+
         PageMsg pageMsg ->
             case pageMsg of
                 Page.Loaded page ->
@@ -186,7 +202,7 @@ update msg model =
                         ( model, Cmd.none )
 
                 Page.Error message ->
-                    ( { model | errors = Errors.add message model.errors }, Cmd.none )
+                    ( { model | errors = Errors.add ("Error handling url: " ++ message) model.errors }, Cmd.none )
 
         ErrorMsg errorMsg ->
             ( { model | errors = Errors.update errorMsg model.errors }, Cmd.none )
@@ -202,7 +218,7 @@ view model =
             case model.page of
                 E editor ->
                     ( "Editing: " ++ editor.card.name
-                    , Editor.view model.origin model.reference editor |> List.map (Html.map EditMsg)
+                    , Editor.view model.origin model.config model.reference editor |> List.map (Html.map EditMsg)
                     )
 
                 V viewer ->

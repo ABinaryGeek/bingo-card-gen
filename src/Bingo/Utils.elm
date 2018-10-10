@@ -1,6 +1,7 @@
 module Bingo.Utils exposing
     ( bounded
     , flattenResult
+    , httpErrorToString
     , nonEmptyList
     , partition
     , resultTask
@@ -10,6 +11,7 @@ module Bingo.Utils exposing
     )
 
 import Html exposing (Html)
+import Http
 import Random
 import Task exposing (Task)
 
@@ -97,3 +99,25 @@ flattenResult result =
 
         Err error ->
             Err error
+
+
+httpErrorToString : Http.Error -> String
+httpErrorToString error =
+    case error of
+        Http.BadUrl url ->
+            "The URL " ++ url ++ " was not valid."
+
+        Http.Timeout ->
+            "The request timed out."
+
+        Http.NetworkError ->
+            "Your internet connection was interrupted."
+
+        Http.BadStatus response ->
+            "The server gave an unexpected response: " ++ response.status.message
+
+        Http.BadPayload message response ->
+            "The server gave an unexpected result: "
+                ++ message
+                ++ " after giving the response: "
+                ++ response.status.message
