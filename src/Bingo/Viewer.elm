@@ -46,7 +46,7 @@ view : Maybe Page.Reference -> Viewer -> Html Msg
 view reference model =
     Html.div [ HtmlA.class "viewer" ]
         [ Html.div [ HtmlA.class "card-container" ]
-            [ Card.viewWithOverlay (stamps model) clickHandler model.stampedCard.card ]
+            [ Card.viewWithOverlay (stamps model ++ lines model) clickHandler model.stampedCard.card ]
         , Html.a
             [ HtmlA.href (reference |> Maybe.map Page.referenceAsEdit |> Page.url)
             , HtmlA.target "_blank"
@@ -109,6 +109,55 @@ internalUpdate saveOut key msg model =
 clickHandler : Int -> Card.Square -> List (Svg.Attribute Msg)
 clickHandler index value =
     [ HtmlE.onClick (ToggleStamp index) ]
+
+
+lines : Viewer -> List (Svg msg)
+lines model =
+    let
+        stampedCard =
+            model.stampedCard
+
+        layout =
+            stampedCard.card.layout
+
+        spacePerSquare =
+            Layout.squareSpace Layout.gridSpace layout.size
+
+        endPoints =
+            Stamps.findLines layout stampedCard.stamps
+                |> List.map (Stamps.ends layout)
+    in
+    [ Svg.g
+        [ SvgA.class "lines-overlay overlay"
+        , SvgA.transform ("translate (0 " ++ String.fromFloat Layout.headerSpace ++ ")")
+        ]
+        (endPoints |> List.map (line spacePerSquare))
+    ]
+
+
+line : Float -> ( ( Int, Int ), ( Int, Int ) ) -> Svg msg
+line spacePerSquare ends =
+    let
+        ( start, end ) =
+            ends
+
+        ( x1, y1 ) =
+            Layout.squarePos (Tuple.first start) (Tuple.second start) spacePerSquare
+
+        ( x2, y2 ) =
+            Layout.squarePos (Tuple.first end) (Tuple.second end) spacePerSquare
+
+        halfSpace =
+            spacePerSquare / 2
+    in
+    Svg.line
+        [ SvgA.class "line"
+        , SvgA.x1 (String.fromFloat (x1 + halfSpace))
+        , SvgA.y1 (String.fromFloat (y1 + halfSpace))
+        , SvgA.x2 (String.fromFloat (x2 + halfSpace))
+        , SvgA.y2 (String.fromFloat (y2 + halfSpace))
+        ]
+        []
 
 
 stamps : Viewer -> List (Svg msg)

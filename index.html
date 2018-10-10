@@ -58,7 +58,7 @@
               compressed: false
             };
             if (parts.length > 1) {
-              flags.sideCar = '"' + parts[0] + '"';
+              flags.sideCar = parts[0];
               parts = parts.slice(1);
             }
             flags.code = decode(parts.join("#"));
@@ -68,6 +68,7 @@
             }
           }
         }
+        console.log(flags);
         const app = Elm.Main.init({ flags: flags });
         app.ports.codeOut.subscribe(function(code) {
           if (code.compressed) {

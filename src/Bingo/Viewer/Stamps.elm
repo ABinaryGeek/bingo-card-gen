@@ -1,5 +1,7 @@
 module Bingo.Viewer.Stamps exposing
-    ( Stamp
+    ( Direction(..)
+    , Line(..)
+    , Stamp
     , Stamps
     , add
     , atIndex
@@ -8,6 +10,8 @@ module Bingo.Viewer.Stamps exposing
     , empty
     , encode
     , encodeString
+    , ends
+    , findLines
     , isSet
     , mapMembership
     , membership
@@ -32,6 +36,21 @@ type alias Stamps =
 -}
 type alias Stamp =
     Int
+
+
+{-| A line through the grid.
+-}
+type Line
+    = Vertical Int
+    | Horizontal Int
+    | Diagonal Direction
+
+
+{-| A direction for a diagonal line.
+-}
+type Direction
+    = TopLeftBottomRight
+    | BottomLeftTopRight
 
 
 {-| Get a stamp representing a given index.
@@ -164,8 +183,89 @@ decodeString string =
     List.foldl Set.union Set.empty parts
 
 
+{-| Find lines of stamps crossing the grid.
+-}
+findLines : Card.Layout -> Stamps -> List Line
+findLines layout stamps =
+    let
+        size =
+            layout.size
+
+        sizeRange =
+            List.range 0 (size - 1)
+
+        potentialLines =
+            List.concat
+                [ sizeRange |> List.map Vertical
+                , sizeRange |> List.map Horizontal
+                , [ Diagonal TopLeftBottomRight, Diagonal BottomLeftTopRight ]
+                ]
+    in
+    potentialLines |> List.filter (lineStamped sizeRange size stamps)
+
+
+{-| The coordinates of the ends of the given line.
+-}
+ends : Card.Layout -> Line -> ( ( Int, Int ), ( Int, Int ) )
+ends layout line =
+    let
+        size =
+            layout.size
+    in
+    lineToCoordinates [ 0, size - 1 ] size line |> tupleEnds
+
+
 
 {- Private -}
+
+
+tupleEnds : List ( Int, Int ) -> ( ( Int, Int ), ( Int, Int ) )
+tupleEnds list =
+    case list of
+        first :: second :: [] ->
+            ( first, second )
+
+        _ ->
+            ( ( 0, 0 ), ( 0, 0 ) )
+
+
+lineStamped : List Int -> Int -> Stamps -> Line -> Bool
+lineStamped sizeRange size stamps line =
+    lineToIndexes sizeRange size line
+        |> List.all (\stamp -> isSet (atIndex stamp) stamps)
+
+
+lineToIndexes : List Int -> Int -> Line -> List Int
+lineToIndexes sizeRange size line =
+    lineToCoordinates sizeRange size line
+        |> List.map (coordinateToIndex size)
+
+
+lineToCoordinates : List Int -> Int -> Line -> List ( Int, Int )
+lineToCoordinates sizeRange size line =
+    let
+        f =
+            case line of
+                Vertical column ->
+                    \row -> ( column, row )
+
+                Horizontal row ->
+                    \column -> ( column, row )
+
+                Diagonal TopLeftBottomRight ->
+                    \index -> ( index, index )
+
+                Diagonal BottomLeftTopRight ->
+                    \index -> ( index, size - 1 - index )
+    in
+    List.map f sizeRange
+
+
+coordinateToIndex : Int -> ( Int, Int ) -> Int
+coordinateToIndex size pos =
+    case pos of
+        ( column, row ) ->
+            column + row * size
 
 
 intSize : Int
