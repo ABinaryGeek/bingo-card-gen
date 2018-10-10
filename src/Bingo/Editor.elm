@@ -111,6 +111,14 @@ view origin config reference model =
                     )
                 ]
           ]
+        , [ Html.a
+                [ Attr.href "https://github.com/ABinaryGeek/bingo-card-gen"
+                , Attr.class "github-ribbon"
+                ]
+                [ Icon.github
+                , Html.text " Fork me on GitHub"
+                ]
+          ]
         , ImportOverlay.view model.importOverlay |> List.map (Html.map ImportOverlayMsg)
         ]
 

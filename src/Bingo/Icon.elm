@@ -2,6 +2,7 @@ module Bingo.Icon exposing
     ( copy
     , edit
     , fileImport
+    , github
     , image
     , listUl
     , plus
@@ -18,63 +19,78 @@ import Html.Attributes as Html
 
 copy : Html msg
 copy =
-    icon "copy"
+    solidIcon "copy"
 
 
 edit : Html msg
 edit =
-    icon "edit"
+    solidIcon "edit"
 
 
 fileImport : Html msg
 fileImport =
-    icon "file-import"
+    solidIcon "file-import"
+
+
+github : Html msg
+github =
+    brandIcon "github"
 
 
 image : Html msg
 image =
-    icon "image"
+    solidIcon "image"
 
 
 listUl : Html msg
 listUl =
-    icon "list-ul"
+    solidIcon "list-ul"
 
 
 plus : Html msg
 plus =
-    icon "plus"
+    solidIcon "plus"
 
 
 questionCircle : Html msg
 questionCircle =
-    icon "question-circle"
+    solidIcon "question-circle"
 
 
 random : Html msg
 random =
-    icon "random"
+    solidIcon "random"
 
 
 save : Html msg
 save =
-    icon "save"
+    solidIcon "save"
 
 
 timesCircle : Html msg
 timesCircle =
-    icon "times-circle"
+    solidIcon "times-circle"
 
 
 trash : Html msg
 trash =
-    icon "trash"
+    solidIcon "trash"
 
 
 
 {- Private -}
 
 
-icon : String -> Html msg
-icon name =
-    Html.span [ Html.class ("fas fa-" ++ name) ] []
+icon : String -> String -> Html msg
+icon set name =
+    Html.span [ Html.class (set ++ " fa-" ++ name) ] []
+
+
+solidIcon : String -> Html msg
+solidIcon =
+    icon "fas"
+
+
+brandIcon : String -> Html msg
+brandIcon =
+    icon "fab"
