@@ -1,8 +1,9 @@
 module Bingo.Editor.Messages exposing (Msg(..))
 
-import Bingo.Card.Model exposing (Card)
 import Bingo.Card.Code as Code
+import Bingo.Card.Model exposing (Card)
 import Bingo.Editor.Model exposing (..)
+import Bingo.Errors as Errors
 import Bingo.Model exposing (..)
 import Html5.DragDrop as DragDrop
 
@@ -17,7 +18,5 @@ type Msg
     | Randomise { includeUnused : Bool }
     | Reorder (List Value)
     | Save
-    | ClearErrors
     | NoOp
-    | CodeMsg Code.Msg
     | DragDropMsg (DragDrop.Msg Value DropTarget)

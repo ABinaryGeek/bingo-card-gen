@@ -1,8 +1,8 @@
 module Bingo.Card.TextBox exposing (TextBoxesOut, render)
 
-import Bingo.Card as Card
 import Bingo.Card.Layout as Layout exposing (Layout)
 import Bingo.Card.Model exposing (..)
+import Bingo.Card.Square as Square
 import Bingo.Model exposing (Value)
 import Json.Encode as Json
 
@@ -84,7 +84,7 @@ textBoxes card =
             card.layout.size
 
         squareValues =
-            Card.squares card.layout card.values |> List.map Card.squareText
+            Square.squares card.layout card.values |> List.map Square.text
     in
     squareRows Layout.gridSpace size squareValues
 

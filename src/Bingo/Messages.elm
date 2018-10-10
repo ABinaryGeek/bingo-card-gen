@@ -1,11 +1,19 @@
 module Bingo.Messages exposing (Msg(..))
 
+import Bingo.Card.Code as Code
 import Bingo.Editor.Messages as Editor
+import Bingo.Errors as Errors
+import Bingo.Page as Page
 import Bingo.Viewer.Messages as Viewer
-import Html5.DragDrop as DragDrop
+import Browser
+import Url exposing (Url)
 
 
 type Msg
-    = ViewerMsg Viewer.Msg
-    | EditorMsg Editor.Msg
-    | Save
+    = NoOp
+    | UrlChange Url
+    | LinkFollowed Browser.UrlRequest
+    | EditMsg Editor.Msg
+    | ViewMsg Viewer.Msg
+    | PageMsg Page.Msg
+    | ErrorMsg Errors.Msg

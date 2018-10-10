@@ -1,153 +1,218 @@
-port module Bingo.Card.Code exposing
-    ( CodeIn
-    , CodeOut
-    , CompressedCode
+module Bingo.Card.Code exposing
+    ( Compressed
+    , In
     , Msg(..)
-    , RawCode
-    , loadCard
-    , saveCard
+    , Out
+    , decode
+    , encode
+    , processFlags
     , subscriptions
     )
 
-import Bingo.Card.Load as Load
-import Bingo.Card.Model exposing (Card)
-import Bingo.Card.Save as Save
+import Bingo.Card.Layout exposing (Layout)
+import Bingo.Card.Model exposing (..)
+import Bingo.Model exposing (Value)
 import Bingo.Utils as Utils
+import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
 import Json.Decode as Json
 import Json.Encode
+import Url.Builder
 
 
 {-| The type of the inbound port required.
 -}
-type alias CodeIn =
+type alias In =
     (Json.Value -> Msg) -> Sub Msg
 
 
 {-| The type of the outbound port required.
 -}
-type alias CodeOut msg =
+type alias Out msg =
     Json.Value -> Cmd msg
+
+
+{-| Messages as a result of encode/decode commands.
+-}
+type Msg
+    = Encoded Compressed (Maybe Json.Value)
+    | Decoded Card (Maybe Json.Value)
+    | Error String
 
 
 {-| A serialized compressed URL-encoded text string representation of a card.
 -}
-type alias CompressedCode =
+type alias Compressed =
     String
-
-
-{-| A serialised JSON representation of a card.
--}
-type alias RawCode =
-    Json.Value
-
-
-{-| Messages as a result of save/load commands.
--}
-type Msg
-    = Loaded Card
-    | Saved CompressedCode
-    | Error String
-
-
-{-| Save a card to a compressed code. Takes the port for doing this as the
-first argument. Will result in a Saved or Error message.
--}
-saveCard : CodeOut msg -> Card -> Cmd msg
-saveCard outPort card =
-    toCode card |> Raw |> encodeCode |> outPort
-
-
-{-| Load a card from a compressed code. Takes the port for doing this as the
-first argument. Will result in a Loaded or Error message.
--}
-loadCard : CodeOut msg -> CompressedCode -> Cmd msg
-loadCard outPort code =
-    code |> Compressed |> encodeCode |> outPort
 
 
 {-| This subscription allows you to listen for responses from the port with
 the result of your requests.
 -}
-subscriptions : CodeIn -> Sub Msg
+subscriptions : In -> Sub Msg
 subscriptions inPort =
     inPort (decodeCode >> inboundCode)
+
+
+{-| Encode a card, with some extra information to go with/identify the code when it is returned.
+-}
+encode : Out msg -> Card -> Maybe Json.Value -> Cmd msg
+encode outPort card sideCar =
+    RawCode (toCode card) sideCar |> encodeCode |> outPort
+
+
+{-| Decode a card, with any extra information to go with/identify the card when it is returned.
+-}
+decode : Out msg -> Compressed -> Maybe Json.Value -> Cmd msg
+decode outPort code sideCar =
+    CompressedCode code sideCar |> encodeCode |> outPort
+
+
+{-| Process some data as though it were a subscription, useful for flags.
+-}
+processFlags : Json.Value -> Msg
+processFlags value =
+    decodeCode value |> inboundCode
 
 
 
 {--Private--}
 
 
+{-| A serialised JSON representation of a card.
+-}
+type alias Raw =
+    Json.Value
+
+
 type Code
-    = Raw RawCode
-    | Compressed CompressedCode
+    = RawCode Raw (Maybe Json.Value)
+    | CompressedCode Compressed (Maybe Json.Value)
 
 
 inboundCode : Result String Code -> Msg
 inboundCode code =
     case code of
-        Ok (Raw rawCode) ->
-            case Load.decodeCard rawCode of
+        Ok (RawCode rawCode sideCar) ->
+            case Json.decodeValue cardDecoder rawCode |> Result.mapError Json.errorToString of
                 Ok card ->
-                    Loaded card
+                    Decoded card sideCar
 
                 Err error ->
                     Error error
 
-        Ok (Compressed compressedCode) ->
-            Saved compressedCode
+        Ok (CompressedCode compressedCode sideCar) ->
+            Encoded compressedCode sideCar
 
         Err error ->
             Error error
 
 
-toCode : Card -> RawCode
+toCode : Card -> Raw
 toCode card =
-    Save.encodeCard card
+    encodeCard card
 
 
 decodeCode : Json.Value -> Result String Code
 decodeCode =
-    Json.decodeValue codeDecoder >> Result.mapError Json.errorToString
+    Json.decodeValue codeDecoder >> Result.mapError Json.errorToString >> Utils.flattenResult
 
 
-codeDecoder : Json.Decoder Code
+codeDecoder : Json.Decoder (Result String Code)
 codeDecoder =
-    errorDecoder
-        |> Json.andThen
-            (\error ->
-                case error of
-                    Just message ->
-                        Json.fail message
-
-                    Nothing ->
-                        Json.field "compressed" Json.bool
-                            |> Json.andThen
-                                (\compressed ->
-                                    if compressed then
-                                        Json.field "code" Json.string |> Json.map Compressed
-
-                                    else
-                                        Json.field "code" Json.value |> Json.map Raw
-                                )
-            )
+    errorWrappedDecoder (Json.field "compressed" Json.bool |> Json.andThen internalCodeDecoder)
 
 
-errorDecoder : Json.Decoder (Maybe String)
-errorDecoder =
-    Json.field "error" Json.string |> Json.maybe
+internalCodeDecoder : Bool -> Json.Decoder Code
+internalCodeDecoder compressed =
+    let
+        maybeSideCar =
+            Json.maybe (Json.field "sideCar" Json.value)
+    in
+    if compressed then
+        Json.map2 CompressedCode
+            (Json.field "code" Json.string)
+            maybeSideCar
+
+    else
+        Json.map2 RawCode
+            (Json.field "code" Json.value)
+            maybeSideCar
+
+
+errorWrappedDecoder : Json.Decoder a -> Json.Decoder (Result String a)
+errorWrappedDecoder decoder =
+    Json.field "error" Json.string |> Json.maybe |> Json.andThen (errorResult decoder)
+
+
+errorResult : Json.Decoder a -> Maybe String -> Json.Decoder (Result String a)
+errorResult decoder maybeError =
+    case maybeError of
+        Just error ->
+            Json.succeed (Err error)
+
+        Nothing ->
+            decoder |> Json.map Ok
 
 
 encodeCode : Code -> Json.Value
 encodeCode code =
-    case code of
-        Raw rawCode ->
-            Json.Encode.object
-                [ ( "compressed", Json.Encode.bool False )
-                , ( "code", rawCode )
-                ]
+    let
+        ( compressed, encodedCode, maybeSideCar ) =
+            case code of
+                RawCode rawCode mS ->
+                    ( False, rawCode, mS )
 
-        Compressed compressedCode ->
-            Json.Encode.object
-                [ ( "compressed", Json.Encode.bool True )
-                , ( "code", Json.Encode.string compressedCode )
-                ]
+                CompressedCode compressedCode mS ->
+                    ( True, Json.Encode.string compressedCode, mS )
+
+        sideCarField =
+            maybeSideCar |> Maybe.map (\s -> ( "sideCar", s )) |> Utils.singletonOrEmpty
+    in
+    Json.Encode.object
+        ([ ( "compressed", Json.Encode.bool compressed )
+         , ( "code", encodedCode )
+         ]
+            ++ sideCarField
+        )
+
+
+cardDecoder : Json.Decoder Card
+cardDecoder =
+    Json.map3 Card
+        (Json.field "name" Json.string)
+        (Json.field "values" (Json.list valueDecoder))
+        (Json.field "layout" layoutDecoder)
+
+
+valueDecoder : Json.Decoder Value
+valueDecoder =
+    Json.string
+
+
+layoutDecoder : Json.Decoder Layout
+layoutDecoder =
+    Json.map2 Layout
+        (Json.field "size" Json.int)
+        (Json.field "free" Json.bool)
+
+
+encodeCard : Card -> Json.Value
+encodeCard card =
+    Json.Encode.object
+        [ ( "name", Json.Encode.string <| card.name )
+        , ( "values", Json.Encode.list encodeValue <| card.values )
+        , ( "layout", encodeLayout <| card.layout )
+        ]
+
+
+encodeValue : Value -> Json.Value
+encodeValue value =
+    Json.Encode.string value
+
+
+encodeLayout : Layout -> Json.Value
+encodeLayout layout =
+    Json.Encode.object
+        [ ( "size", Json.Encode.int <| layout.size )
+        , ( "free", Json.Encode.bool <| layout.free )
+        ]

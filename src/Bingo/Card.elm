@@ -3,22 +3,23 @@ module Bingo.Card exposing
     , changeName
     , couldAdd
     , init
+    , onCardChange
+    , onCardLoad
     , remove
     , resize
     , setValues
-    , squareText
-    , squares
     , swap
-    ,  toggleFreeSquare
+    , toggleFreeSquare
     )
 
+import Bingo.Card.Code as Code
 import Bingo.Card.Layout as Layout exposing (Layout)
 import Bingo.Card.Model exposing (..)
-import Bingo.Model as Model exposing (Value)
+import Bingo.Card.TextBox as TextBox
+import Bingo.Model exposing (..)
+import Bingo.Page as Pages
 import Bingo.Utils as Utils
-import Html exposing (Html)
-import Html.Attributes as Html
-import Html5.DragDrop as DragDrop
+import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
 
 
 init : Card
@@ -30,6 +31,19 @@ init =
         , free = True
         }
     }
+
+
+onCardLoad : TextBox.TextBoxesOut msg -> Pages.Page -> Cmd msg
+onCardLoad textBoxesOut page =
+    TextBox.render textBoxesOut (Pages.card page)
+
+
+onCardChange : Code.Out msg -> TextBox.TextBoxesOut msg -> Pages.Page -> Cmd msg
+onCardChange codeOut textBoxesOut page =
+    Cmd.batch
+        [ onCardLoad textBoxesOut page
+        , Pages.save codeOut page
+        ]
 
 
 couldAdd : Value -> Card -> Bool
@@ -87,60 +101,3 @@ toggleFreeSquare card =
 swap : Value -> Value -> Card -> Card
 swap this that card =
     { card | values = Utils.swap this that card.values }
-
-
-squares : Layout -> List Value -> List Square
-squares layout values =
-    let
-        amount =
-            Layout.amountOfSquares layout
-
-        ( used, unused ) =
-            Utils.split amount values
-
-        actualAmount =
-            List.length used
-
-        extraNeeded =
-            amount - actualAmount
-
-        padded =
-            List.map Filled used ++ List.repeat extraNeeded Unfilled
-    in
-    case Layout.freeSquareUsed layout of
-        True ->
-            let
-                half =
-                    amount // 2
-            in
-            List.concat
-                [ List.take half padded
-                , [ Free ]
-                , List.drop half padded
-                ]
-
-        False ->
-            padded
-
-
-squareMap : (Value -> List x) -> Square -> List x
-squareMap f sq =
-    case sq of
-        Filled value ->
-            f value
-
-        _ ->
-            []
-
-
-squareText : Square -> String
-squareText sq =
-    case sq of
-        Filled value ->
-            value
-
-        Unfilled ->
-            ""
-
-        Free ->
-            "FREE"

@@ -49,27 +49,40 @@
       });
 
       function init() {
-        const app = Elm.Main.init();
+        let flags = null;
+        const hash = window.location.hash;
+        if (hash) {
+          try {
+            let parts = hash.substring(1).split("#");
+            flags = {
+              compressed: false
+            };
+            if (parts.length > 1) {
+              flags.sideCar = parseInt(parts[0], 10);
+              parts = parts.slice(1);
+            }
+            flags.code = decode(parts.join("#"));
+          } catch (e) {
+            flags = {
+              error: "Error parsing initial URL: " + e.message
+            }
+          }
+        }
+        const app = Elm.Main.init({ flags: flags });
         app.ports.codeOut.subscribe(function(code) {
-          let result;
           if (code.compressed) {
             try {
-              result = {
-                compressed: false,
-                code: JSON.parse(LZString.decompressFromEncodedURIComponent(code.code))
-              };
+              code.code = decode(code.code);
             } catch (e) {
-              result = {
+              code = {
                 error: e.message
               }
             }
           } else {
-            result = {
-              compressed: true,
-              code: LZString.compressToEncodedURIComponent(JSON.stringify(code.code))
-            };
+            code.code = LZString.compressToEncodedURIComponent(JSON.stringify(code.code));
           }
-          app.ports.codeIn.send(result);
+          code.compressed = !code.compressed;
+          app.ports.codeIn.send(code);
         });
         app.ports.saveOut.subscribe(function(name) {
           saveSvgAsPng(document.querySelectorAll(".bingo-card")[0], name + ".png");
@@ -83,27 +96,32 @@
           navigator.serviceWorker.register("offline.js");
         }
 
-
         app.ports.textBoxesOut.subscribe(function(data) {
-          new d3plus.TextBox()
-            .data(data.squares)
-            .fontResize(true)
-            .verticalAlign("middle")
-            .textAnchor("middle")
-            .fontWeight(900)
-            .fontFamily(["Varela Round", "sans-serif"])
-            .select(".bingo-card .text-overlay .values")
-            .render();
-          new d3plus.TextBox()
-            .data([data.title])
-            .fontResize(true)
-            .verticalAlign("middle")
-            .textAnchor("middle")
-            .fontMax(100)
-            .fontFamily("Suez One", "serif")
-            .select(".bingo-card .text-overlay .titles")
-            .render();
+          setTimeout(function() {
+              new d3plus.TextBox()
+                .data(data.squares)
+                .fontResize(true)
+                .verticalAlign("middle")
+                .textAnchor("middle")
+                .fontWeight(900)
+                .fontFamily(["Varela Round", "sans-serif"])
+                .select(".bingo-card .text-overlay .values")
+                .render();
+              new d3plus.TextBox()
+                .data([data.title])
+                .fontResize(true)
+                .verticalAlign("middle")
+                .textAnchor("middle")
+                .fontMax(100)
+                .fontFamily("Suez One", "serif")
+                .select(".bingo-card .text-overlay .titles")
+                .render();
+            }, 10);
         });
+      }
+
+      function decode(code) {
+        return JSON.parse(LZString.decompressFromEncodedURIComponent(code))
       }
     </script>
   </body>

@@ -1,5 +1,6 @@
 module Bingo.Icon exposing
     ( copy
+    , edit
     , image
     , plus
     , questionCircle
@@ -16,6 +17,11 @@ import Html.Attributes as Html
 copy : Html msg
 copy =
     icon "copy"
+
+
+edit : Html msg
+edit =
+    icon "edit"
 
 
 image : Html msg

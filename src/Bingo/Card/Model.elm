@@ -1,7 +1,8 @@
-module Bingo.Card.Model exposing (Card, Square(..))
+module Bingo.Card.Model exposing (Card, Square(..), Stamped)
 
 import Bingo.Card.Layout exposing (Layout)
 import Bingo.Model exposing (Value)
+import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
 
 
 type alias Card =
@@ -15,3 +16,9 @@ type Square
     = Filled Value
     | Unfilled
     | Free
+
+
+type alias Stamped =
+    { card : Card
+    , stamps : Stamps
+    }

@@ -1,13 +1,16 @@
 module Bingo.Card.Layout exposing
     ( Layout
     , amountOfSquares
+    , amountOfValues
     , freeSquareUsed
     , freeSquareValid
     , gridSpace
     , gridStyles
     , headerSpace
     , padding
+    , pos
     , resize
+    , rowMembers
     , squarePos
     , squareSpace
     , toggleFreeSquare
@@ -48,11 +51,11 @@ gridStyles layout =
     ]
 
 
-amountOfSquares : Layout -> Int
-amountOfSquares layout =
+amountOfValues : Layout -> Int
+amountOfValues layout =
     let
         amount =
-            layout.size * layout.size
+            amountOfSquares layout
     in
     case freeSquareUsed layout of
         True ->
@@ -60,6 +63,11 @@ amountOfSquares layout =
 
         False ->
             amount
+
+
+amountOfSquares : Layout -> Int
+amountOfSquares layout =
+    layout.size * layout.size
 
 
 freeSquareUsed : Layout -> Bool
@@ -92,12 +100,20 @@ squareSpace rowSpace size =
     ((rowSpace - padding) / toFloat size) - padding
 
 
-squarePos : Int -> Int -> Float -> ( Float, Float )
-squarePos column row space =
+pos : Int -> Float -> Float
+pos row space =
     let
         spaceWithPadding =
             space + padding
     in
-    ( padding + toFloat column * spaceWithPadding
-    , padding + toFloat row * spaceWithPadding
-    )
+    padding + toFloat row * spaceWithPadding
+
+
+squarePos : Int -> Int -> Float -> ( Float, Float )
+squarePos column row space =
+    ( pos column space, pos row space )
+
+
+rowMembers : List a -> Int -> Int -> List a
+rowMembers members size row =
+    members |> List.drop (row * size) |> List.take size

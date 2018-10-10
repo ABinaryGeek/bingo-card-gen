@@ -1,8 +1,6 @@
 module Bingo.Editor exposing
-    ( SaveOut
-    , init
-    , onChangeUrl
-    , subscriptions
+    ( init
+    , load
     , update
     , view
     )
@@ -11,15 +9,18 @@ import Bingo.Card as Card
 import Bingo.Card.Code as Code
 import Bingo.Card.Layout as Layout exposing (Layout)
 import Bingo.Card.Model exposing (Card)
-import Bingo.Card.Save as Card
 import Bingo.Card.TextBox as TextBox
 import Bingo.Card.View as Card
 import Bingo.Editor.Messages exposing (..)
 import Bingo.Editor.Model exposing (..)
 import Bingo.Editor.ValueList as ValueList
+import Bingo.Errors as Errors exposing (Errors)
 import Bingo.Icon as Icon
 import Bingo.Model exposing (Value)
+import Bingo.Page as Page exposing (Page)
+import Bingo.Save as Save
 import Bingo.Utils as Utils
+import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
 import Browser.Dom as Dom
 import Browser.Navigation as Navigation
 import Html exposing (Html)
@@ -31,38 +32,23 @@ import Random.List
 import Svg exposing (Svg)
 import Svg.Attributes as Svg
 import Task
-import Url exposing (Url)
-import Url.Builder
 
 
-type alias SaveOut msg =
-    String -> Cmd msg
-
-
-init : Code.CodeOut msg -> TextBox.TextBoxesOut msg -> Maybe Code.CompressedCode -> ( Editor, Cmd msg )
-init codeOut textBoxesOut maybeCode =
+init : Code.Out msg -> TextBox.TextBoxesOut msg -> ( Editor, Cmd msg )
+init codeOut textBoxesOut =
     let
-        ( editor, cmd ) =
-            onChangeUrl codeOut textBoxesOut maybeCode emptyEditor
-
-        -- Catch a real dumb edge case where we don't load anything if we get given a code that is
-        -- the same as the default card.
-        cmds =
-            if editor.card == emptyEditor.card then
-                Cmd.batch [ cmd, onCardChange codeOut textBoxesOut editor.card ]
-
-            else
-                cmd
+        editor =
+            emptyEditor
     in
-    ( editor, cmds )
+    ( editor, Card.onCardChange codeOut textBoxesOut (Page.Edit editor.card) )
 
 
-subscriptions : Code.CodeIn -> Sub Msg
-subscriptions codeIn =
-    Code.subscriptions codeIn |> Sub.map CodeMsg
+load : Code.Out msg -> TextBox.TextBoxesOut msg -> Card -> ( Editor, Cmd msg )
+load codeOut textBoxesOut card =
+    ( emptyEditorWithCard card, Card.onCardLoad textBoxesOut (Page.Edit card) )
 
 
-update : SaveOut Msg -> Code.CodeOut Msg -> TextBox.TextBoxesOut Msg -> Navigation.Key -> Msg -> Editor -> ( Editor, Cmd Msg )
+update : Save.Out Msg -> Code.Out Msg -> TextBox.TextBoxesOut Msg -> Navigation.Key -> Msg -> Editor -> ( Editor, Cmd Msg )
 update saveOut codeOut textBoxesOut key msg model =
     let
         ( editor, cmd ) =
@@ -73,7 +59,7 @@ update saveOut codeOut textBoxesOut key msg model =
 
         commands =
             if card /= model.card then
-                Cmd.batch [ cmd, onCardChange codeOut textBoxesOut card ]
+                Cmd.batch [ cmd, Card.onCardChange codeOut textBoxesOut (Page.Edit card) ]
 
             else
                 cmd
@@ -81,8 +67,8 @@ update saveOut codeOut textBoxesOut key msg model =
     ( { editor | card = card }, commands )
 
 
-view : Editor -> Html Msg
-view model =
+view : String -> Maybe Page.Reference -> Editor -> Html Msg
+view origin reference model =
     let
         dropTarget =
             DragDrop.getDropId model.dragDrop
@@ -100,44 +86,26 @@ view model =
                     )
                     dropTarget
                 )
-
-        errorBox =
-            if List.isEmpty model.errors then
-                []
-
-            else
-                [ errors model.errors ]
     in
     Html.div [ Attr.class "editor" ]
-        ([ Html.div [ Attr.class "container big" ]
-            [ Card.view model.card ]
-         , Html.div
+        [ Html.div [ Attr.class "container big" ]
+            [ Html.a
+                [ Attr.href (reference |> Maybe.map Page.referenceAsView |> Page.url)
+                , Attr.target "_blank"
+                ]
+                [ Card.view model.card ]
+            ]
+        , Html.div
             [ Attr.class "controls" ]
             [ ValueList.view attributes model.card (drag model.dragDrop)
             , Html.div [ Attr.class "container" ]
                 [ ValueList.add model.card model.newValueInput
                 , settings model.card
-                , share model.code
+                , share origin reference
                 ]
             , ValueList.commonlyAdded model.card
             ]
-         ]
-            ++ errorBox
-        )
-
-
-onChangeUrl : Code.CodeOut msg -> TextBox.TextBoxesOut msg -> Maybe Code.CompressedCode -> Editor -> ( Editor, Cmd msg )
-onChangeUrl codeOut textBoxesOut maybeCode editor =
-    case maybeCode of
-        Just code ->
-            if editor.code /= maybeCode then
-                ( editor, Code.loadCard codeOut code )
-
-            else
-                ( editor, Cmd.none )
-
-        Nothing ->
-            internalInit codeOut textBoxesOut
+        ]
 
 
 
@@ -146,32 +114,18 @@ onChangeUrl codeOut textBoxesOut maybeCode editor =
 
 emptyEditor : Editor
 emptyEditor =
-    { code = Nothing
-    , card = Card.init
+    emptyEditorWithCard Card.init
+
+
+emptyEditorWithCard : Card -> Editor
+emptyEditorWithCard card =
+    { card = card
     , newValueInput = ""
     , dragDrop = DragDrop.init
-    , errors = []
     }
 
 
-internalInit : Code.CodeOut msg -> TextBox.TextBoxesOut msg -> ( Editor, Cmd msg )
-internalInit codeOut textBoxesOut =
-    let
-        editor =
-            emptyEditor
-    in
-    ( editor, onCardChange codeOut textBoxesOut editor.card )
-
-
-onCardChange : Code.CodeOut msg -> TextBox.TextBoxesOut msg -> Card -> Cmd msg
-onCardChange codeOut textBoxesOut card =
-    Cmd.batch
-        [ Code.saveCard codeOut card
-        , TextBox.render textBoxesOut card
-        ]
-
-
-internalUpdate : SaveOut Msg -> Navigation.Key -> Msg -> Editor -> ( Editor, Cmd Msg )
+internalUpdate : Save.Out Msg -> Navigation.Key -> Msg -> Editor -> ( Editor, Cmd Msg )
 internalUpdate saveOut key msg model =
     case msg of
         AddNewValue ->
@@ -217,7 +171,7 @@ internalUpdate saveOut key msg model =
             else
                 let
                     amount =
-                        Layout.amountOfSquares model.card.layout
+                        Layout.amountOfValues model.card.layout
 
                     ( used, unused ) =
                         Utils.split amount model.card.values
@@ -233,24 +187,10 @@ internalUpdate saveOut key msg model =
             ( { model | card = Card.setValues values model.card }, Cmd.none )
 
         Save ->
-            ( model, saveOut model.card.name )
-
-        ClearErrors ->
-            ( { model | errors = [] }, Cmd.none )
+            ( model, Save.save saveOut model.card.name )
 
         NoOp ->
             ( model, Cmd.none )
-
-        CodeMsg codeMsg ->
-            case codeMsg of
-                Code.Loaded card ->
-                    ( { model | card = card }, Cmd.none )
-
-                Code.Saved compressedCode ->
-                    ( { model | code = Just compressedCode }, Navigation.pushUrl key (codeUrl compressedCode) )
-
-                Code.Error message ->
-                    ( { model | errors = message :: model.errors }, Cmd.none )
 
         DragDropMsg dragDropMsg ->
             let
@@ -278,11 +218,6 @@ internalUpdate saveOut key msg model =
             )
 
 
-codeUrl : Code.CompressedCode -> String
-codeUrl code =
-    Url.Builder.custom Url.Builder.Relative [] [] (Just code)
-
-
 drag : DragDrop.Model Value DropTarget -> Maybe Drag
 drag dragDrop =
     case DragDrop.getDragId dragDrop of
@@ -301,31 +236,6 @@ squareAttributes highlighted name =
     dragDropTarget name ++ highlightedClass name highlighted
 
 
-errors : List Error -> Html Msg
-errors messages =
-    Html.div [ Attr.class "errors" ]
-        [ Html.div [ Attr.class "heading" ]
-            [ Html.h2 [] [ Html.text "Error" ]
-            , Html.button
-                [ Attr.class "pure-button pure-button-primary"
-                , Html.onClick ClearErrors
-                ]
-                [ Icon.timesCircle ]
-            ]
-        , Html.p []
-            [ Html.text "Whoops, there was an error. Please "
-            , Html.a [ Attr.href "https://github.com/ABinaryGeek/bingo-card-gen/issues/new" ]
-                [ Html.text "report this as a bug." ]
-            ]
-        , Html.ol [] (List.map error messages)
-        ]
-
-
-error : Error -> Html msg
-error message =
-    Html.li [ Attr.class "error" ] [ Html.text message ]
-
-
 settings : Card -> Html Msg
 settings card =
     Html.div []
@@ -339,16 +249,17 @@ settings card =
         ]
 
 
-share : Maybe String -> Html Msg
-share code =
+share : String -> Maybe Page.Reference -> Html Msg
+share origin reference =
     Html.div []
         [ Html.h2 [] [ Html.text "Share" ]
         , Html.form
             [ Attr.class "pure-form pure-form-stacked", Html.onSubmit NoOp ]
-            (code
+            (reference
                 |> Maybe.map
-                    (\c ->
-                        [ linkView c
+                    (\r ->
+                        [ linkView origin r
+                        , linkEdit origin r
                         , saveImage
                         ]
                     )
@@ -357,26 +268,31 @@ share code =
         ]
 
 
-linkEdit : String -> Html Msg
-linkEdit code =
-    linkView code
+linkEdit : String -> Page.Reference -> Html Msg
+linkEdit origin reference =
+    copyableLink "Link To Edit: " "edit-link-field" origin (Page.referenceAsEdit reference)
 
 
-linkView : String -> Html Msg
-linkView code =
-    Html.div [ Attr.class "change-name pure-control-group" ]
-        [ Html.label [ Attr.for "view-field" ] [ Html.text "Link To Edit: " ]
+linkView : String -> Page.Reference -> Html Msg
+linkView origin reference =
+    copyableLink "Link To View: " "view-link-field" origin (Page.referenceAsView reference)
+
+
+copyableLink : String -> String -> String -> Page.Reference -> Html Msg
+copyableLink description id origin reference =
+    Html.div [ Attr.class "pure-control-group" ]
+        [ Html.label [ Attr.for id ] [ Html.text description ]
         , Html.div [ Attr.class "form-row" ]
             [ Html.input
-                [ Attr.id "view-field"
+                [ Attr.id id
                 , Attr.class "pure-input-1"
-                , Attr.value ("https://abinarygeek.github.io/bingo-card-gen/#" ++ code)
+                , Attr.value (Page.externalUrl origin (Just reference))
                 , Attr.readonly True
                 ]
                 []
             , Html.button
                 [ Attr.class "copy-button pure-button"
-                , Attr.attribute "data-clipboard-target" "#view-field"
+                , Attr.attribute "data-clipboard-target" ("#" ++ id)
                 ]
                 [ Icon.copy ]
             ]
@@ -426,8 +342,8 @@ changeSizeControl layout =
             (List.map
                 Html.text
                 [ "(="
-                , String.fromInt (Layout.amountOfSquares layout)
-                , " Squares)"
+                , String.fromInt (Layout.amountOfValues layout)
+                , " Values)"
                 ]
             )
         ]

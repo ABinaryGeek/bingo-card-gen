@@ -15,6 +15,7 @@ import Bingo.Utils as Utils
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Html
+import Html.Keyed as HtmlK
 import Html5.DragDrop
 
 
@@ -113,7 +114,7 @@ view attributes card drag =
             else
                 let
                     amount =
-                        Layout.amountOfSquares card.layout
+                        Layout.amountOfValues card.layout
 
                     itemH =
                         valueListItem attributes drag
@@ -121,7 +122,7 @@ view attributes card drag =
                     ( used, unused ) =
                         Utils.split amount card.values
                 in
-                Html.ul
+                HtmlK.ul
                     [ Attr.class "values" ]
                     (List.concat
                         [ List.map (itemH True) used
@@ -166,13 +167,14 @@ randomiseOrder values =
         ]
 
 
-valueListItem : (Value -> List (Html.Attribute msg)) -> Maybe Drag -> Bool -> Value -> Html msg
+valueListItem : (Value -> List (Html.Attribute msg)) -> Maybe Drag -> Bool -> Value -> ( String, Html msg )
 valueListItem attributes drag used value =
     let
         isDragged =
             drag |> Maybe.map (\d -> d.draggedValue == value) |> Maybe.withDefault False
     in
-    Html.li []
+    ( value
+    , Html.li []
         [ Html.span
             (Attr.classList
                 [ ( "value", True )
@@ -183,6 +185,7 @@ valueListItem attributes drag used value =
             )
             [ Html.text value ]
         ]
+    )
 
 
 usedClass : Bool -> Html.Attribute msg

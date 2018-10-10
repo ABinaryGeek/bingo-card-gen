@@ -2,13 +2,16 @@ port module Main exposing (main)
 
 import Bingo.Card as Card
 import Bingo.Card.Code as Code
-import Bingo.Card.Load as Card
-import Bingo.Card.Model exposing (Card)
-import Bingo.Card.Save as Card
+import Bingo.Card.Model exposing (..)
 import Bingo.Card.TextBox as TextBox
 import Bingo.Editor as Editor
 import Bingo.Editor.Messages as Editor
 import Bingo.Editor.Model exposing (Editor)
+import Bingo.Errors as Errors exposing (Errors)
+import Bingo.Messages exposing (..)
+import Bingo.Page as Page exposing (Page)
+import Bingo.Save as Save
+import Bingo.Utils as Utils
 import Bingo.Viewer as Viewer
 import Bingo.Viewer.Messages as Viewer
 import Bingo.Viewer.Model exposing (Viewer)
@@ -23,33 +26,31 @@ import Url exposing (Url)
 import Url.Builder
 
 
-port codeOut : Code.CodeOut msg
+port codeOut : Code.Out msg
 
 
+{-| Code.In, but ports don't like that.
+-}
 port codeIn : (Json.Value -> msg) -> Sub msg
 
 
-port saveOut : Editor.SaveOut msg
+port saveOut : Save.Out msg
 
 
 port textBoxesOut : TextBox.TextBoxesOut msg
 
 
-type Page
+type PageModel
     = E Editor
     | V Viewer
 
 
-type Msg
-    = NoOp
-    | UrlChange (Maybe Code.CompressedCode)
-    | EditMsg Editor.Msg
-    | ViewMsg Viewer.Msg
-
-
 type alias Model =
-    { page : Page
+    { page : PageModel
+    , reference : Maybe Page.Reference
     , key : Navigation.Key
+    , errors : Errors
+    , origin : String
     }
 
 
@@ -64,32 +65,76 @@ main =
         }
 
 
-init : {} -> Url -> Navigation.Key -> ( Model, Cmd Msg )
-init _ url key =
+init : Maybe Json.Value -> Url -> Navigation.Key -> ( Model, Cmd Msg )
+init flags url key =
     let
-        ( editor, cmd ) =
-            Editor.init codeOut textBoxesOut url.fragment
+        potentialPage =
+            Maybe.map Page.processFlags flags
+
+        ( page, cmd ) =
+            case potentialPage of
+                Just (Page.Loaded p) ->
+                    load p
+
+                _ ->
+                    let
+                        ( editor, editorCmd ) =
+                            Editor.init codeOut textBoxesOut
+                    in
+                    ( E editor, editorCmd )
+
+        ( referenceError, reference ) =
+            Page.referenceFromUrl url |> errorAndReference
+
+        almostModel =
+            { page = page
+            , key = key
+            , reference = reference
+            , errors = Errors.init
+            , origin =
+                Url.toString
+                    { protocol = url.protocol
+                    , host = url.host
+                    , port_ = url.port_
+                    , path = ""
+                    , query = Nothing
+                    , fragment = Nothing
+                    }
+            }
+
+        flagsError =
+            case potentialPage of
+                Just (Page.Saved _) ->
+                    Just "Flags contained encoded data."
+
+                Just (Page.Error message) ->
+                    Just message
+
+                _ ->
+                    Nothing
+
+        errors =
+            [ flagsError, referenceError ]
+
+        model =
+            { almostModel | errors = Errors.addMany (List.filterMap identity errors) almostModel.errors }
     in
-    ( { page = E editor
-      , key = key
-      }
-    , cmd |> Cmd.map EditMsg
-    )
+    ( model, cmd )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Editor.subscriptions codeIn |> Sub.map EditMsg
+    Page.subscriptions codeIn |> Sub.map PageMsg
 
 
 onUrlRequest : Browser.UrlRequest -> Msg
 onUrlRequest urlRequest =
-    NoOp
+    LinkFollowed urlRequest
 
 
 onUrlChange : Url -> Msg
 onUrlChange url =
-    UrlChange url.fragment
+    UrlChange url
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -98,13 +143,7 @@ update msg model =
         EditMsg msgEditor ->
             case model.page of
                 E editor ->
-                    let
-                        ( newEditor, editorMsg ) =
-                            Editor.update saveOut codeOut textBoxesOut model.key msgEditor editor
-                    in
-                    ( { model | page = E newEditor }
-                    , Cmd.map EditMsg editorMsg
-                    )
+                    Editor.update saveOut codeOut textBoxesOut model.key msgEditor editor |> fromEditor model
 
                 V viewer ->
                     ( model, Cmd.none )
@@ -115,25 +154,42 @@ update msg model =
                     ( model, Cmd.none )
 
                 V viewer ->
-                    let
-                        ( newViewer, viewerMsg ) =
-                            Viewer.update msgViewer viewer
-                    in
-                    ( { model | page = V newViewer }, Cmd.map ViewMsg viewerMsg )
+                    Viewer.update saveOut codeOut textBoxesOut model.key msgViewer viewer |> fromViewer model
 
-        UrlChange maybeCode ->
-            case model.page of
-                E editor ->
-                    let
-                        ( newEditor, editorMsg ) =
-                            Editor.onChangeUrl codeOut textBoxesOut maybeCode editor
-                    in
-                    ( { model | page = E newEditor }
-                    , Cmd.map EditMsg editorMsg
-                    )
+        UrlChange url ->
+            onChangeUrl url model
 
-                V viewer ->
-                    ( model, Cmd.none )
+        LinkFollowed urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    onChangeUrl url model
+
+                Browser.External url ->
+                    ( model, Navigation.load url )
+
+        PageMsg pageMsg ->
+            case pageMsg of
+                Page.Loaded page ->
+                    let
+                        ( newPage, cmd ) =
+                            load page
+                    in
+                    ( { model | page = newPage }, cmd )
+
+                Page.Saved reference ->
+                    if model.reference /= Just reference then
+                        ( { model | reference = Just reference }
+                        , Navigation.pushUrl model.key (Page.url (Just reference))
+                        )
+
+                    else
+                        ( model, Cmd.none )
+
+                Page.Error message ->
+                    ( { model | errors = Errors.add message model.errors }, Cmd.none )
+
+        ErrorMsg errorMsg ->
+            ( { model | errors = Errors.update errorMsg model.errors }, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
@@ -141,13 +197,102 @@ update msg model =
 
 view : Model -> Browser.Document Msg
 view model =
-    case model.page of
-        E editor ->
-            { title = "Bingo Card Creator - Edit"
-            , body = [ Editor.view editor |> Html.map EditMsg ]
-            }
+    let
+        ( title, content ) =
+            case model.page of
+                E editor ->
+                    ( "Editing: " ++ editor.card.name
+                    , [ Editor.view model.origin model.reference editor |> Html.map EditMsg ]
+                    )
 
-        V viewer ->
-            { title = viewer.card.name
-            , body = [ Viewer.view viewer |> Html.map ViewMsg ]
+                V viewer ->
+                    ( viewer.stampedCard.card.name
+                    , [ Viewer.view model.reference viewer |> Html.map ViewMsg ]
+                    )
+    in
+    { title = title
+    , body =
+        List.concat
+            [ content
+            , Errors.view model.errors |> List.map (Html.map ErrorMsg)
+            ]
+    }
+
+
+onChangeUrl : Url -> Model -> ( Model, Cmd Msg )
+onChangeUrl url oldModel =
+    let
+        ( error, reference ) =
+            Page.referenceFromUrl url |> errorAndReference
+
+        model =
+            { oldModel
+                | reference = reference
+                , errors = Errors.maybeAdd error oldModel.errors
             }
+    in
+    case reference of
+        Just code ->
+            if oldModel.reference /= reference then
+                ( model, Page.load codeOut code )
+
+            else
+                ( model, Cmd.none )
+
+        Nothing ->
+            Editor.init codeOut textBoxesOut |> fromEditor model
+
+
+fromEditor : Model -> ( Editor, Cmd Editor.Msg ) -> ( Model, Cmd Msg )
+fromEditor model pair =
+    let
+        ( editor, editorMsg ) =
+            pair
+    in
+    ( { model | page = E editor }
+    , Cmd.map EditMsg editorMsg
+    )
+
+
+fromViewer : Model -> ( Viewer, Cmd Viewer.Msg ) -> ( Model, Cmd Msg )
+fromViewer model pair =
+    let
+        ( viewer, editorMsg ) =
+            pair
+    in
+    ( { model | page = V viewer }
+    , Cmd.map ViewMsg editorMsg
+    )
+
+
+load : Page -> ( PageModel, Cmd Msg )
+load pageRequest =
+    case pageRequest of
+        Page.Edit card ->
+            let
+                ( editor, cmd ) =
+                    Editor.load codeOut textBoxesOut card
+            in
+            ( E editor, cmd )
+
+        Page.View stampedCard ->
+            let
+                ( viewer, cmd ) =
+                    Viewer.load codeOut textBoxesOut stampedCard
+            in
+            ( V viewer, cmd |> Cmd.map ViewMsg )
+
+
+errorAndReference : Maybe (Result String Page.Reference) -> ( Maybe String, Maybe Page.Reference )
+errorAndReference maybeResult =
+    case maybeResult of
+        Just result ->
+            case result of
+                Ok reference ->
+                    ( Nothing, Just reference )
+
+                Err error ->
+                    ( Just error, Nothing )
+
+        Nothing ->
+            ( Nothing, Nothing )

@@ -1,13 +1,15 @@
 module Bingo.Utils exposing
     ( bounded
+    , flattenResult
+    , nonEmptyList
+    , partition
     , resultTask
+    , singletonOrEmpty
     , split
     , swap
     )
 
 import Html exposing (Html)
-import Html.Attributes as Html
-import Html5.DragDrop as DragDrop
 import Random
 import Task exposing (Task)
 
@@ -53,3 +55,45 @@ resultTask result =
 
         Err x ->
             Task.fail x
+
+
+singletonOrEmpty : Maybe a -> List a
+singletonOrEmpty maybe =
+    case maybe of
+        Just a ->
+            [ a ]
+
+        Nothing ->
+            []
+
+
+nonEmptyList : List a -> Maybe ( a, List a )
+nonEmptyList list =
+    case list of
+        [] ->
+            Nothing
+
+        first :: rest ->
+            Just ( first, rest )
+
+
+partition : String -> String -> ( Maybe String, String )
+partition separator string =
+    case String.indexes separator string of
+        [] ->
+            ( Nothing, string )
+
+        firstIndex :: _ ->
+            ( Just (String.left firstIndex string)
+            , String.dropLeft (firstIndex + String.length separator) string
+            )
+
+
+flattenResult : Result x (Result x a) -> Result x a
+flattenResult result =
+    case result of
+        Ok innerResult ->
+            innerResult
+
+        Err error ->
+            Err error

@@ -2,13 +2,49 @@
   fill: #f0cd78;
 }
 
-.square .background {
+.square {
   fill: #ffffff;
 }
 
 .bingo-card .titles text {
   fill: #aa78f0;
   filter: drop-shadow(2px 2px 2px #d6ab40);
+}
+
+.stamp {
+  fill: #ffd700;
+  fill-opacity: 0.7;
+}
+
+.overlay {
+  pointer-events: none;
+}
+
+.overlay * {
+  pointer-events: none;
+}
+
+.overlay text {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+.card-container {
+  display: flex;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  padding: 0;
+}
+
+.viewer .card-container svg {
+  margin: 1em;
+  width: calc(100vmin - 2em);
+  height: calc(100vmin - 2em);
 }
 
 .editor {
@@ -131,4 +167,25 @@ form div {
 
 .errors ol {
   overflow: auto;
+}
+
+.edit-link {
+  position: fixed;
+  font-size: 0.75em;
+  top: 0;
+  left: 1em;
+  background-color: #dddddd;
+  padding: 0.5em 1em 0.75em 1em;
+  border-radius: 0 0 1em 1em;
+}
+
+.save-link {
+  position: fixed;
+  font-size: 0.75em;
+  top: 0;
+  right: 1em;
+  background-color: #dddddd;
+  padding: 0.5em 1em 0.75em 1em;
+  border-radius: 0 0 1em 1em;
+  border: none;
 }
