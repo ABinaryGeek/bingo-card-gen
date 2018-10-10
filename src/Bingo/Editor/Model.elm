@@ -5,6 +5,7 @@ module Bingo.Editor.Model exposing
     )
 
 import Bingo.Card.Model exposing (Card)
+import Bingo.Editor.ImportOverlay as ImportOverlay exposing (ImportOverlay)
 import Bingo.Model exposing (..)
 import Html5.DragDrop as DragDrop
 
@@ -17,6 +18,7 @@ type DropTarget
 type alias Editor =
     { card : Card
     , newValueInput : String
+    , importOverlay : ImportOverlay
     , dragDrop : DragDrop.Model Value DropTarget
     }
 

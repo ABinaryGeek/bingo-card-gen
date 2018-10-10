@@ -11,6 +11,7 @@ import Bingo.Card.Layout as Layout exposing (Layout)
 import Bingo.Card.Model exposing (Card)
 import Bingo.Card.TextBox as TextBox
 import Bingo.Card.View as Card
+import Bingo.Editor.ImportOverlay as ImportOverlay exposing (ImportOverlay)
 import Bingo.Editor.Messages exposing (..)
 import Bingo.Editor.Model exposing (..)
 import Bingo.Editor.ValueList as ValueList
@@ -67,7 +68,7 @@ update saveOut codeOut textBoxesOut key msg model =
     ( { editor | card = card }, commands )
 
 
-view : String -> Maybe Page.Reference -> Editor -> Html Msg
+view : String -> Maybe Page.Reference -> Editor -> List (Html Msg)
 view origin reference model =
     let
         dropTarget =
@@ -87,24 +88,28 @@ view origin reference model =
                     dropTarget
                 )
     in
-    Html.div [ Attr.class "editor" ]
-        [ Html.div [ Attr.class "container big" ]
-            [ Html.a
-                [ Attr.href (reference |> Maybe.map Page.referenceAsView |> Page.url)
-                , Attr.target "_blank"
+    List.concat
+        [ [ Html.div [ Attr.class "editor" ]
+                [ Html.div [ Attr.class "container big" ]
+                    [ Html.a
+                        [ Attr.href (reference |> Maybe.map Page.referenceAsView |> Page.url)
+                        , Attr.target "_blank"
+                        ]
+                        [ Card.view model.card ]
+                    ]
+                , Html.div
+                    [ Attr.class "controls" ]
+                    [ ValueList.view attributes model.card (drag model.dragDrop)
+                    , Html.div [ Attr.class "container" ]
+                        [ ValueList.add model.card model.newValueInput
+                        , settings model.card
+                        , share origin reference
+                        ]
+                    , ValueList.commonlyAdded model.card
+                    ]
                 ]
-                [ Card.view model.card ]
-            ]
-        , Html.div
-            [ Attr.class "controls" ]
-            [ ValueList.view attributes model.card (drag model.dragDrop)
-            , Html.div [ Attr.class "container" ]
-                [ ValueList.add model.card model.newValueInput
-                , settings model.card
-                , share origin reference
-                ]
-            , ValueList.commonlyAdded model.card
-            ]
+          ]
+        , ImportOverlay.view model.importOverlay |> List.map (Html.map ImportOverlayMsg)
         ]
 
 
@@ -121,6 +126,7 @@ emptyEditorWithCard : Card -> Editor
 emptyEditorWithCard card =
     { card = card
     , newValueInput = ""
+    , importOverlay = ImportOverlay.init
     , dragDrop = DragDrop.init
     }
 
@@ -191,6 +197,26 @@ internalUpdate saveOut key msg model =
 
         NoOp ->
             ( model, Cmd.none )
+
+        ImportOverlayMsg importOverlayMsg ->
+            let
+                ( importOverlay, result ) =
+                    ImportOverlay.update importOverlayMsg model.importOverlay
+
+                toAdd =
+                    case result of
+                        ImportOverlay.Import values ->
+                            values
+
+                        ImportOverlay.NoResult ->
+                            []
+            in
+            ( { model
+                | importOverlay = importOverlay
+                , card = Card.addMany toAdd model.card
+              }
+            , Cmd.none
+            )
 
         DragDropMsg dragDropMsg ->
             let

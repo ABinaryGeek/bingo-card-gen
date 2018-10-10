@@ -1,5 +1,6 @@
 module Bingo.Card exposing
     ( add
+    , addMany
     , changeName
     , couldAdd
     , init
@@ -20,6 +21,7 @@ import Bingo.Model exposing (..)
 import Bingo.Page as Pages
 import Bingo.Utils as Utils
 import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
+import List.Extra as List
 
 
 init : Card
@@ -71,6 +73,15 @@ add value card =
                 []
     in
     setValues (card.values ++ toAdd) card
+
+
+addMany : List Value -> Card -> Card
+addMany toAdd card =
+    let
+        values =
+            card.values ++ toAdd
+    in
+    setValues (values |> List.unique) card
 
 
 remove : Value -> Card -> Card

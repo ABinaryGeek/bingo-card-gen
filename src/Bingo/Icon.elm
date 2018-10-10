@@ -1,7 +1,9 @@
 module Bingo.Icon exposing
     ( copy
     , edit
+    , fileImport
     , image
+    , listUl
     , plus
     , questionCircle
     , random
@@ -24,9 +26,19 @@ edit =
     icon "edit"
 
 
+fileImport : Html msg
+fileImport =
+    icon "file-import"
+
+
 image : Html msg
 image =
     icon "image"
+
+
+listUl : Html msg
+listUl =
+    icon "list-ul"
 
 
 plus : Html msg

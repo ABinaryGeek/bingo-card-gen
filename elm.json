@@ -13,6 +13,7 @@
             "elm/random": "1.0.0",
             "elm/svg": "1.0.1",
             "elm/url": "1.0.0",
+            "elm-community/list-extra": "8.1.0",
             "elm-community/random-extra": "3.0.0",
             "norpan/elm-html5-drag-drop": "3.0.0"
         },

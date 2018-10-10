@@ -7,6 +7,7 @@ module Bingo.Editor.ValueList exposing
 import Bingo.Card as Card
 import Bingo.Card.Layout as Layout exposing (Layout)
 import Bingo.Card.Model exposing (Card)
+import Bingo.Editor.ImportOverlay as ImportOverlay exposing (ImportOverlay)
 import Bingo.Editor.Messages exposing (..)
 import Bingo.Editor.Model exposing (..)
 import Bingo.Icon as Icon
@@ -57,16 +58,15 @@ add card newValueInput =
         [ Html.h2 [] [ Html.text "Add" ]
         , Html.form
             [ Attr.class "pure-form pure-form-stacked", Html.onSubmit NoOp ]
-            (List.concat
-                [ addValueControl newValueInput card
-                ]
-            )
+            [ addValueControl newValueInput card
+            , importValuesControl
+            ]
         ]
 
 
-addValueControl : String -> Card -> List (Html Msg)
+addValueControl : String -> Card -> Html Msg
 addValueControl input card =
-    [ Html.div [ Attr.class "add-value pure-control-group" ]
+    Html.div [ Attr.class "pure-control-group" ]
         [ Html.label [ Attr.for "add-value-field" ] [ Html.text "Square Text:" ]
         , Html.div [ Attr.class "form-row" ]
             [ Html.input
@@ -86,7 +86,18 @@ addValueControl input card =
                 ]
             ]
         ]
-    ]
+
+
+importValuesControl : Html Msg
+importValuesControl =
+    Html.div [ Attr.class "pure-control-group" ]
+        [ Html.label [] [ Html.text "Import:" ]
+        , Html.button
+            [ Attr.class "pure-button"
+            , Html.onClick (ImportOverlayMsg ImportOverlay.Show)
+            ]
+            [ Icon.listUl, Html.text " Add Many" ]
+        ]
 
 
 commonlyAdded : Card -> Html Msg

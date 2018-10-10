@@ -202,7 +202,7 @@ view model =
             case model.page of
                 E editor ->
                     ( "Editing: " ++ editor.card.name
-                    , [ Editor.view model.origin model.reference editor |> Html.map EditMsg ]
+                    , Editor.view model.origin model.reference editor |> List.map (Html.map EditMsg)
                     )
 
                 V viewer ->
