@@ -14,6 +14,8 @@ import Bingo.Card.Model exposing (..)
 import Bingo.Model exposing (Value)
 import Bingo.Utils as Utils
 import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
+import Color exposing (Color)
+import Color.Hex as Color
 import Json.Decode as Json
 import Json.Encode
 import Url.Builder
@@ -178,10 +180,18 @@ encodeCode code =
 
 cardDecoder : Json.Decoder Card
 cardDecoder =
-    Json.map3 Card
+    Json.map4 Card
         (Json.field "name" Json.string)
         (Json.field "values" (Json.list valueDecoder))
         (Json.field "layout" layoutDecoder)
+        (Json.maybe (Json.field "style" styleDecoder))
+
+
+styleDecoder : Json.Decoder Style
+styleDecoder =
+    Json.map2 Style
+        (Json.field "title" colorDecoder)
+        (Json.field "background" colorDecoder)
 
 
 valueDecoder : Json.Decoder Value
@@ -196,13 +206,34 @@ layoutDecoder =
         (Json.field "free" Json.bool)
 
 
+colorDecoder : Json.Decoder Color
+colorDecoder =
+    Json.string
+        |> Json.map Color.fromHex
+        |> Json.andThen
+            (\c ->
+                case c of
+                    Just color ->
+                        Json.succeed color
+
+                    Nothing ->
+                        Json.fail "Invalid hex color"
+            )
+
+
 encodeCard : Card -> Json.Value
 encodeCard card =
+    let
+        style =
+            card.style |> Maybe.map (\s -> [ ( "style", encodeStyle s ) ]) |> Maybe.withDefault []
+    in
     Json.Encode.object
-        [ ( "name", Json.Encode.string <| card.name )
-        , ( "values", Json.Encode.list encodeValue <| card.values )
-        , ( "layout", encodeLayout <| card.layout )
-        ]
+        ([ ( "name", Json.Encode.string <| card.name )
+         , ( "values", Json.Encode.list encodeValue <| card.values )
+         , ( "layout", encodeLayout <| card.layout )
+         ]
+            ++ style
+        )
 
 
 encodeValue : Value -> Json.Value
@@ -216,3 +247,16 @@ encodeLayout layout =
         [ ( "size", Json.Encode.int <| layout.size )
         , ( "free", Json.Encode.bool <| layout.free )
         ]
+
+
+encodeStyle : Style -> Json.Value
+encodeStyle style =
+    Json.Encode.object
+        [ ( "title", encodeColor style.title )
+        , ( "background", encodeColor style.background )
+        ]
+
+
+encodeColor : Color -> Json.Value
+encodeColor color =
+    color |> Color.toHex |> .hex |> Json.Encode.string

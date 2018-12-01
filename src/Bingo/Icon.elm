@@ -8,6 +8,7 @@ module Bingo.Icon exposing
     , github
     , image
     , listUl
+    , palette
     , plus
     , questionCircle
     , random
@@ -64,6 +65,11 @@ image =
 listUl : Html msg
 listUl =
     solidIcon "list-ul"
+
+
+palette : Html msg
+palette =
+    solidIcon "palette"
 
 
 plus : Html msg

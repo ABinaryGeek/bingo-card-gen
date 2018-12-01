@@ -10,6 +10,7 @@ import Bingo.Card.Square as Square
 import Bingo.Editor.Messages
 import Bingo.Model as Model exposing (Value)
 import Bingo.Utils as Utils
+import Color.Hex as Color
 import Html exposing (Html)
 import Html.Attributes as Html
 import Svg exposing (Svg)
@@ -42,6 +43,9 @@ viewWithOverlay overlay attributeInjector card =
 
         attrs =
             Square.squares card.layout card.values |> List.indexedMap attributeInjector
+
+        style =
+            card.style |> Maybe.withDefault defaultStyle
     in
     Svg.svg
         [ SvgA.class "bingo-card"
@@ -51,6 +55,7 @@ viewWithOverlay overlay attributeInjector card =
         ([ defs spacePerSquare size
          , Svg.rect
             ([ SvgA.class "background"
+             , "fill:" ++ (Color.toHex style.background |> .hex) ++ ";" |> SvgA.style
              ]
                 ++ widthAndHeight width height
             )
@@ -61,7 +66,11 @@ viewWithOverlay overlay attributeInjector card =
             ]
             (grid card attrs width)
          , Svg.g [ SvgA.class "text-overlay overlay" ]
-            [ Svg.g [ SvgA.class "titles" ] []
+            [ Svg.g
+                [ SvgA.class "titles"
+                , "color:" ++ (Color.toHex style.title |> .hex) ++ "; filter: drop-shadow(2px 2px 2px " ++ (Color.toHex style.title |> .hex) ++ ");" |> SvgA.style
+                ]
+                []
             , Svg.g [ SvgA.class "values" ] []
             ]
          ]

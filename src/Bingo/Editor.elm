@@ -9,7 +9,7 @@ import Bingo.BaseUrl as BaseUrl exposing (BaseUrl)
 import Bingo.Card as Card
 import Bingo.Card.Code as Code
 import Bingo.Card.Layout as Layout exposing (Layout)
-import Bingo.Card.Model exposing (Card)
+import Bingo.Card.Model exposing (..)
 import Bingo.Card.TextBox as TextBox
 import Bingo.Card.View as Card
 import Bingo.Config as Config exposing (Config)
@@ -28,6 +28,8 @@ import Bingo.Utils as Utils
 import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
 import Browser.Dom as Dom
 import Browser.Navigation as Navigation
+import Color exposing (Color)
+import Color.Hex as Color
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Html
@@ -108,7 +110,7 @@ view baseUrl config reference model =
                     ([ ValueList.view attributes model.card (drag model.dragDrop)
                      , Html.div [ Attr.class "container" ]
                         [ ValueList.add model.card model.newValueInput
-                        , settings model.card
+                        , settings model
                         , share baseUrl reference config.urlShortener model.viewShortUrl model.editShortUrl
                         ]
                      ]
@@ -132,6 +134,48 @@ view baseUrl config reference model =
 {- Private -}
 
 
+type alias ColorInputDetails =
+    { name : String
+    , target : ColorInputTarget
+    , getString : Editor -> String
+    , setString : String -> Editor -> Editor
+    , getColor : Maybe Style -> Color
+    , setColor : Color -> Style -> Style
+    }
+
+
+titleColorInput : ColorInputDetails
+titleColorInput =
+    { name = "Title"
+    , target = TitleColorInput
+    , getString = .titleColor
+    , setString = \s -> \m -> { m | titleColor = s }
+    , getColor = getColor .title
+    , setColor = \c -> \s -> { s | title = c }
+    }
+
+
+backgroundColorInput : ColorInputDetails
+backgroundColorInput =
+    { name = "Background"
+    , target = BackgroundColorInput
+    , getString = .backgroundColor
+    , setString = \s -> \m -> { m | backgroundColor = s }
+    , getColor = getColor .background
+    , setColor = \c -> \s -> { s | background = c }
+    }
+
+
+colorInputDetails : ColorInputTarget -> ColorInputDetails
+colorInputDetails target =
+    case target of
+        TitleColorInput ->
+            titleColorInput
+
+        BackgroundColorInput ->
+            backgroundColorInput
+
+
 emptyEditor : Editor
 emptyEditor =
     emptyEditorWithCard Card.init
@@ -145,6 +189,8 @@ emptyEditorWithCard card =
     , viewShortUrl = ShortUrl.Unknown
     , editShortUrl = ShortUrl.Unknown
     , dragDrop = DragDrop.init
+    , titleColor = card.style |> getColor .title |> Color.toHex |> .hex
+    , backgroundColor = card.style |> getColor .background |> Color.toHex |> .hex
     }
 
 
@@ -287,6 +333,54 @@ internalUpdate saveOut key config baseUrl reference msg model =
             , Cmd.none
             )
 
+        ColorChanged target string ->
+            let
+                prefixedString =
+                    case String.uncons string of
+                        Just ( '#', _ ) ->
+                            string
+
+                        _ ->
+                            String.cons '#' string
+
+                color =
+                    Color.fromHex prefixedString
+
+                details =
+                    colorInputDetails target
+
+                inputModel =
+                    details.getString model
+
+                updatedCardModel =
+                    { model | card = setColorInCard details color model.card }
+            in
+            ( details.setString prefixedString updatedCardModel
+            , Messages.NoBackMessage
+            , Cmd.none
+            )
+
+
+setColorInCard : ColorInputDetails -> Maybe Color -> Card -> Card
+setColorInCard details color card =
+    let
+        updatedStyle =
+            case color of
+                Just c ->
+                    details.setColor c (card.style |> Maybe.withDefault defaultStyle)
+
+                Nothing ->
+                    card.style |> Maybe.withDefault defaultStyle
+
+        removeDefaultStyle =
+            if updatedStyle == defaultStyle then
+                Nothing
+
+            else
+                Just updatedStyle
+    in
+    { card | style = removeDefaultStyle }
+
 
 updateShortUrl : ShortUrlTarget -> ShortUrl -> Editor -> Editor
 updateShortUrl target value model =
@@ -316,8 +410,12 @@ squareAttributes highlighted name =
     dragDropTarget name ++ highlightedClass name highlighted
 
 
-settings : Card -> Html Msg
-settings card =
+settings : Editor -> Html Msg
+settings editor =
+    let
+        card =
+            editor.card
+    in
     Html.div []
         [ Html.h2 [] [ Html.text "Settings" ]
         , Html.form
@@ -325,6 +423,38 @@ settings card =
             [ changeNameControl card.name
             , changeSizeControl card.layout
             , freeSquareControl card.layout
+            , colorPickerWidget titleColorInput card.style editor
+            , colorPickerWidget backgroundColorInput card.style editor
+            ]
+        ]
+
+
+colorPickerWidget : ColorInputDetails -> Maybe Style -> Editor -> Html Msg
+colorPickerWidget details style editor =
+    let
+        id =
+            (details.name |> String.toLower) ++ "field"
+
+        color =
+            details.getColor style
+
+        model =
+            details.getString editor
+
+        error =
+            Color.fromHex model == Nothing
+    in
+    Html.div [ Attr.class "color-input pure-control-group" ]
+        [ Html.label [ Attr.for id ] [ Html.text details.name, Html.text " Color: " ]
+        , Html.div [ Attr.class "form-row" ]
+            [ Html.input
+                [ Attr.id id
+                , Attr.classList [ ( "pure-input-1", True ), ( "error", error ) ]
+                , Attr.value model
+                , Attr.type_ "color"
+                , ColorChanged details.target |> Html.onInput
+                ]
+                []
             ]
         ]
 

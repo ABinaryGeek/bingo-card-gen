@@ -23,6 +23,8 @@ type alias Editor =
     , dragDrop : DragDrop.Model Value DropTarget
     , editShortUrl : ShortUrl
     , viewShortUrl : ShortUrl
+    , titleColor : String
+    , backgroundColor : String
     }
 
 

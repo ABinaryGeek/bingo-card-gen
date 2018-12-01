@@ -1,4 +1,4 @@
-module Bingo.Editor.Messages exposing (Msg(..), ShortUrlTarget(..))
+module Bingo.Editor.Messages exposing (ColorInputTarget(..), Msg(..), ShortUrlTarget(..))
 
 import Bingo.Card.Code as Code
 import Bingo.Card.Model exposing (Card)
@@ -25,8 +25,14 @@ type Msg
     | ShortUrlMsg (ShortUrl.Msg ShortUrlTarget)
     | ImportOverlayMsg ImportOverlay.Msg
     | DragDropMsg (DragDrop.Msg Value DropTarget)
+    | ColorChanged ColorInputTarget String
 
 
 type ShortUrlTarget
     = ViewShortUrl
     | EditShortUrl
+
+
+type ColorInputTarget
+    = TitleColorInput
+    | BackgroundColorInput

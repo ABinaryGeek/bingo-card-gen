@@ -18,6 +18,8 @@ import Bingo.Viewer.Messages exposing (..)
 import Bingo.Viewer.Model exposing (..)
 import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
 import Browser.Navigation as Navigation
+import Color.Hex as Color
+import Color.Manipulate as Color
 import Html exposing (Html)
 import Html.Attributes as HtmlA
 import Html.Events as HtmlE
@@ -126,10 +128,14 @@ lines model =
         endPoints =
             Stamps.findLines layout stampedCard.stamps
                 |> List.map (Stamps.ends layout)
+
+        style =
+            stampedCard.card.style |> Maybe.withDefault Card.defaultStyle
     in
     [ Svg.g
         [ SvgA.class "lines-overlay overlay"
         , SvgA.transform ("translate (0 " ++ String.fromFloat Layout.headerSpace ++ ")")
+        , "stroke:" ++ (Color.toHex style.title |> .hex) ++ ";" |> SvgA.style
         ]
         (endPoints |> List.map (line spacePerSquare))
     ]

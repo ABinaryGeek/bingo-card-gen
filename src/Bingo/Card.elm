@@ -32,6 +32,7 @@ init =
         { size = 5
         , free = True
         }
+    , style = Nothing
     }
 
 
