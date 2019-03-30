@@ -174,25 +174,30 @@ form div {
   overflow: auto;
 }
 
-.edit-link {
+.buttons {
   position: fixed;
   font-size: 0.75em;
   top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0.5em;
+}
+
+.buttons .top-button {
   left: 1em;
   background-color: #dddddd;
   padding: 0.5em 1em 0.75em 1em;
   border-radius: 0 0 1em 1em;
+  border: none;
+  margin: 0 0.5em;
+  display: flex;
+  align-items: center;
 }
 
-.save-link {
-  position: fixed;
-  font-size: 0.75em;
-  top: 0;
-  right: 1em;
-  background-color: #dddddd;
-  padding: 0.5em 1em 0.75em 1em;
-  border-radius: 0 0 1em 1em;
-  border: none;
+.buttons .edit-link {
+  margin: 0 auto 0 0;
 }
 
 .import-overlay {
