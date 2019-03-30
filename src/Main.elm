@@ -153,7 +153,23 @@ update msg model =
                     ( model, Cmd.none )
 
                 V viewer ->
-                    Viewer.update msgViewer viewer |> fromViewer model
+                    case Viewer.update model.config model.baseUrl model.reference msgViewer viewer of
+                        ( newViewer, backMessage, viewerMsg ) ->
+                            let
+                                errors =
+                                    case backMessage of
+                                        Error message ->
+                                            Errors.add message model.errors
+
+                                        _ ->
+                                            model.errors
+                            in
+                            ( { model
+                                | page = V newViewer
+                                , errors = errors
+                              }
+                            , Cmd.map ViewMsg viewerMsg
+                            )
 
         UrlChange url ->
             onChangeUrl url model

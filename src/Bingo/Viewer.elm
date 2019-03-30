@@ -4,13 +4,17 @@ module Bingo.Viewer exposing
     , view
     )
 
+import Bingo.BaseUrl exposing (BaseUrl)
 import Bingo.Card as Card
 import Bingo.Card.Layout as Layout
 import Bingo.Card.Model as Card exposing (Card)
 import Bingo.Card.View as Card
+import Bingo.Config exposing (Config)
 import Bingo.Icon as Icon
+import Bingo.Messages as Messages
 import Bingo.Page as Page exposing (Page)
 import Bingo.Save as Save
+import Bingo.ShortUrl as ShortUrl exposing (ShortUrl)
 import Bingo.Viewer.Messages exposing (..)
 import Bingo.Viewer.Model exposing (..)
 import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
@@ -31,6 +35,7 @@ load card =
     in
     ( { stampedCard = card
       , rotations = List.repeat squares 0
+      , shortUrl = ShortUrl.Unknown
       }
     , Cmd.batch
         [ generateRandomRotations squares
@@ -44,27 +49,70 @@ view reference model =
     Html.div [ HtmlA.class "viewer" ]
         [ Html.div [ HtmlA.class "card-container" ]
             [ Card.viewWithOverlay (stamps model ++ lines model) clickHandler model.stampedCard.card ]
-        , Html.a
-            [ HtmlA.href (reference |> Maybe.map Page.referenceAsEdit |> Page.url)
-            , HtmlA.target "_blank"
-            , HtmlA.class "edit-link"
-            , HtmlA.title "Edit this card."
+        , Html.div [ HtmlA.class "buttons" ]
+            [ Html.a
+                [ HtmlA.href (reference |> Maybe.map Page.referenceAsEdit |> Page.url)
+                , HtmlA.target "_blank"
+                , HtmlA.class "top-button edit-link"
+                , HtmlA.title "Edit this card."
+                ]
+                [ Icon.edit ]
+            , shortUrlSection model.shortUrl
+            , Html.button
+                [ HtmlA.class "top-button save-link"
+                , HtmlA.title "Save this card as a PNG."
+                , HtmlE.onClick Save
+                ]
+                [ Icon.save ]
             ]
-            [ Icon.edit ]
-        , Html.button
-            [ HtmlA.class "save-link"
-            , HtmlA.title "Save this card as a PNG."
-            , HtmlE.onClick Save
-            ]
-            [ Icon.save ]
         ]
 
 
-update : Msg -> Viewer -> ( Viewer, Cmd Msg )
-update msg model =
+shortUrlSection : ShortUrl -> Html Msg
+shortUrlSection shortUrl =
+    case shortUrl of
+        ShortUrl.Unknown ->
+            Html.button
+                [ HtmlA.class "top-button short-url"
+                , HtmlA.title "Get a short URL for this card."
+                , HtmlE.onClick ShortenURL
+                ]
+                [ Icon.cut ]
+
+        ShortUrl.Requested ->
+            Html.button
+                [ HtmlA.class "top-button short-url"
+                , HtmlA.title "Get a short URL for this card."
+                ]
+                [ Icon.cog ]
+
+        ShortUrl.Known url ->
+            let
+                id =
+                    "short-url-input"
+            in
+            Html.div [ HtmlA.class "top-button short-url" ]
+                [ Html.input
+                    [ HtmlA.id id
+                    , HtmlA.class "pure-input-1"
+                    , HtmlA.value url
+                    , HtmlA.readonly True
+                    ]
+                    []
+                , Html.button
+                    [ HtmlA.class "copy-button"
+                    , HtmlA.attribute "data-clipboard-target" ("#" ++ id)
+                    , HtmlA.title "Copy the link to this card."
+                    ]
+                    [ Icon.copy ]
+                ]
+
+
+update : Config -> BaseUrl -> Maybe Page.Reference -> Msg -> Viewer -> ( Viewer, Messages.Back, Cmd Msg )
+update config baseUrl reference msg model =
     let
-        ( viewer, cmd ) =
-            internalUpdate msg model
+        ( viewer, backMsg, cmd ) =
+            internalUpdate config baseUrl reference msg model
 
         stampedCard =
             viewer.stampedCard
@@ -76,18 +124,18 @@ update msg model =
             else
                 cmd
     in
-    ( { viewer | stampedCard = stampedCard }, commands )
+    ( { viewer | stampedCard = stampedCard }, backMsg, commands )
 
 
 
 {- Private -}
 
 
-internalUpdate : Msg -> Viewer -> ( Viewer, Cmd Msg )
-internalUpdate msg model =
+internalUpdate : Config -> BaseUrl -> Maybe Page.Reference -> Msg -> Viewer -> ( Viewer, Messages.Back, Cmd Msg )
+internalUpdate config baseUrl reference msg model =
     case msg of
         Rotations rotations ->
-            ( { model | rotations = rotations }, Cmd.none )
+            ( { model | rotations = rotations }, Messages.NoBackMessage, Cmd.none )
 
         ToggleStamp index ->
             let
@@ -97,10 +145,37 @@ internalUpdate msg model =
                 updatedCard =
                     { card | stamps = Stamps.toggle (Stamps.atIndex index) card.stamps }
             in
-            ( { model | stampedCard = updatedCard }, Cmd.none )
+            ( { model | stampedCard = updatedCard, shortUrl = ShortUrl.Unknown }, Messages.NoBackMessage, Cmd.none )
 
         Save ->
-            ( model, Save.save model.stampedCard.card.name )
+            ( model, Messages.NoBackMessage, Save.save model.stampedCard.card.name )
+
+        ShortenURL ->
+            case config.urlShortener of
+                Just urlShortener ->
+                    case model.shortUrl of
+                        ShortUrl.Unknown ->
+                            ( { model | shortUrl = ShortUrl.Requested }
+                            , Messages.NoBackMessage
+                            , ShortUrl.request urlShortener baseUrl reference () |> Cmd.map ShortUrlMsg
+                            )
+
+                        _ ->
+                            ( model, Messages.NoBackMessage, Cmd.none )
+
+                Nothing ->
+                    ( model, Messages.NoBackMessage, Cmd.none )
+
+        ShortUrlMsg (ShortUrl.Response _ result) ->
+            case result of
+                Ok shortUrl ->
+                    ( { model | shortUrl = ShortUrl.Known shortUrl }, Messages.NoBackMessage, Cmd.none )
+
+                Err error ->
+                    ( { model | shortUrl = ShortUrl.Unknown }
+                    , Messages.Error ("Error getting short url: " ++ error)
+                    , Cmd.none
+                    )
 
 
 clickHandler : Int -> Card.Square -> List (Svg.Attribute Msg)

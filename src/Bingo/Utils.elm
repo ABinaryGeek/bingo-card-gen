@@ -88,20 +88,9 @@ httpErrorToString error =
         Http.NetworkError ->
             "Your internet connection was interrupted."
 
-        Http.BadStatus response ->
-            "The server gave an unexpected " ++ httpResponseToString response
+        Http.BadStatus status ->
+            "The server gave an unexpected status: " ++ String.fromInt status
 
-        Http.BadPayload message response ->
+        Http.BadBody message ->
             "The server gave an unexpected result: "
                 ++ message
-                ++ " after giving the "
-                ++ httpResponseToString response
-
-
-
-{- Private -}
-
-
-httpResponseToString : Http.Response String -> String
-httpResponseToString response =
-    "response: '" ++ response.status.message ++ "' Body: '" ++ response.body ++ "'"

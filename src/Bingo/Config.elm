@@ -20,7 +20,7 @@ init =
 
 load : (Result Http.Error Config -> msg) -> Cmd msg
 load handle =
-    Http.get "config.json" configDecoder |> Http.send handle
+    Http.get { url = "config.json", expect = Http.expectJson handle configDecoder }
 
 
 

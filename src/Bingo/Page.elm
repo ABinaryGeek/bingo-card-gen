@@ -19,6 +19,7 @@ module Bingo.Page exposing
 
 import Bingo.BaseUrl as BaseUrl exposing (BaseUrl)
 import Bingo.Card.Code as Code
+import Bingo.Card.Layout as Layout exposing (Layout)
 import Bingo.Card.Model as Card exposing (Card)
 import Bingo.Utils as Utils
 import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
@@ -150,7 +151,7 @@ pageAsView : Page -> Page
 pageAsView page =
     case page of
         Edit unstampedCard ->
-            View { card = unstampedCard, stamps = Stamps.empty }
+            View { card = unstampedCard, stamps = defaultStamps unstampedCard }
 
         View _ ->
             page
@@ -170,11 +171,11 @@ referenceAsEdit reference =
 
 {-| Get the view reference for the card from the given page reference.
 -}
-referenceAsView : Reference -> Reference
-referenceAsView reference =
+referenceAsView : Card -> Reference -> Reference
+referenceAsView c reference =
     case reference of
-        EditR c ->
-            ViewR Stamps.empty c
+        EditR compressed ->
+            ViewR (defaultStamps c) compressed
 
         ViewR _ _ ->
             reference
@@ -263,3 +264,12 @@ referenceSideCar reference =
 
         ViewR stamps _ ->
             Just (Stamps.encode stamps)
+
+
+defaultStamps : Card -> Stamps
+defaultStamps c =
+    if Layout.freeSquareUsed c.layout then
+        Stamps.add (Layout.amountOfValues c.layout // 2) Stamps.empty
+
+    else
+        Stamps.empty

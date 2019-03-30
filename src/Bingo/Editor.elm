@@ -88,12 +88,15 @@ view baseUrl config reference model =
                     )
                     dropTarget
                 )
+
+        card =
+            model.card
     in
     List.concat
         [ [ Html.div [ Attr.class "editor" ]
                 [ Html.div [ Attr.class "container big" ]
                     [ Html.a
-                        [ Attr.href (reference |> Maybe.map Page.referenceAsView |> Page.url)
+                        [ Attr.href (reference |> Maybe.map (Page.referenceAsView card) |> Page.url)
                         , Attr.target "_blank"
                         ]
                         [ Card.view model.card ]
@@ -104,7 +107,7 @@ view baseUrl config reference model =
                      , Html.div [ Attr.class "container" ]
                         [ ValueList.add model.card model.newValueInput
                         , settings model
-                        , share baseUrl reference config.urlShortener model.viewShortUrl model.editShortUrl
+                        , share baseUrl reference card config.urlShortener model.viewShortUrl model.editShortUrl
                         ]
                      ]
                         ++ ValueList.commonlyAdded config.commonValues model.card
@@ -257,9 +260,13 @@ internalUpdate config baseUrl reference msg model =
         Shorten target ->
             case config.urlShortener of
                 Just urlShortener ->
+                    let
+                        ref =
+                            reference |> Maybe.map (referenceForTarget target model.card)
+                    in
                     ( updateShortUrl target ShortUrl.Requested model
                     , Messages.NoBackMessage
-                    , ShortUrl.request urlShortener baseUrl reference target |> Cmd.map ShortUrlMsg
+                    , ShortUrl.request urlShortener baseUrl ref target |> Cmd.map ShortUrlMsg
                     )
 
                 Nothing ->
@@ -275,7 +282,7 @@ internalUpdate config baseUrl reference msg model =
 
                 Err error ->
                     ( updateShortUrl target ShortUrl.Unknown model
-                    , Messages.Error ("Error getting short url: " ++ Utils.httpErrorToString error)
+                    , Messages.Error ("Error getting short url: " ++ error)
                     , Cmd.none
                     )
 
@@ -349,6 +356,16 @@ internalUpdate config baseUrl reference msg model =
             , Messages.NoBackMessage
             , Cmd.none
             )
+
+
+referenceForTarget : ShortUrlTarget -> Card -> Page.Reference -> Page.Reference
+referenceForTarget target card reference =
+    case target of
+        ViewShortUrl ->
+            Page.referenceAsView card reference
+
+        EditShortUrl ->
+            Page.referenceAsEdit reference
 
 
 setColorInCard : ColorInputDetails -> Maybe Color -> Card -> Card
@@ -446,8 +463,8 @@ colorPickerWidget details editor =
         ]
 
 
-share : BaseUrl -> Maybe Page.Reference -> Maybe String -> ShortUrl -> ShortUrl -> Html Msg
-share baseUrl reference urlShortener viewShortUrl editShortUrl =
+share : BaseUrl -> Maybe Page.Reference -> Card -> Maybe String -> ShortUrl -> ShortUrl -> Html Msg
+share baseUrl reference card urlShortener viewShortUrl editShortUrl =
     Html.div []
         [ Html.h2 [] [ Html.text "Share" ]
         , Html.form
@@ -455,7 +472,7 @@ share baseUrl reference urlShortener viewShortUrl editShortUrl =
             (reference
                 |> Maybe.map
                     (\r ->
-                        [ linkView viewShortUrl baseUrl urlShortener r
+                        [ linkView viewShortUrl baseUrl urlShortener card r
                         , linkEdit editShortUrl baseUrl urlShortener r
                         , saveImage
                         ]
@@ -470,9 +487,9 @@ linkEdit shortUrl baseUrl urlShortener reference =
     copyableLink EditShortUrl shortUrl "Link To Edit: " "edit-link-field" baseUrl urlShortener (Page.referenceAsEdit reference)
 
 
-linkView : ShortUrl -> BaseUrl -> Maybe String -> Page.Reference -> Html Msg
-linkView shortUrl baseUrl urlShortener reference =
-    copyableLink ViewShortUrl shortUrl "Link To View: " "view-link-field" baseUrl urlShortener (Page.referenceAsView reference)
+linkView : ShortUrl -> BaseUrl -> Maybe String -> Card -> Page.Reference -> Html Msg
+linkView shortUrl baseUrl urlShortener card reference =
+    copyableLink ViewShortUrl shortUrl "Link To View: " "view-link-field" baseUrl urlShortener (Page.referenceAsView card reference)
 
 
 copyableLink : ShortUrlTarget -> ShortUrl -> String -> String -> BaseUrl -> Maybe String -> Page.Reference -> Html Msg

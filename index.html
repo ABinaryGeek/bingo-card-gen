@@ -107,8 +107,9 @@
         });
 
         document.addEventListener("dragstart", function(event) {
-          event.dataTransfer.setData("text/plain", "");
-        }, false);
+          event.dataTransfer.setData("bingo-card/square", "");
+          event.dataTransfer.dropEffect = "move;"
+        }, true);
 
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.register("offline.js");
