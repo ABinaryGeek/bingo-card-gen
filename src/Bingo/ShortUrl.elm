@@ -1,10 +1,9 @@
 module Bingo.ShortUrl exposing (Msg(..), ShortUrl(..), request)
 
-import Bingo.BaseUrl as BaseUrl exposing (BaseUrl)
+import Bingo.BaseUrl exposing (BaseUrl)
 import Bingo.Page as Page
 import Dict
 import Http
-import Json.Decode as Json
 import Task
 
 
@@ -50,7 +49,7 @@ expectedResponse response =
                 Nothing ->
                     Err "No location header."
 
-        otherwise ->
+        _ ->
             Err "Incorrect response."
 
 

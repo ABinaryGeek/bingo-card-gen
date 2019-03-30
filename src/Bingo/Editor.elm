@@ -5,19 +5,16 @@ module Bingo.Editor exposing
     , view
     )
 
-import Bingo.BaseUrl as BaseUrl exposing (BaseUrl)
+import Bingo.BaseUrl exposing (BaseUrl)
 import Bingo.Card as Card
-import Bingo.Card.Code as Code
 import Bingo.Card.Layout as Layout exposing (Layout)
 import Bingo.Card.Model exposing (..)
-import Bingo.Card.TextBox as TextBox
 import Bingo.Card.View as Card
-import Bingo.Config as Config exposing (Config)
+import Bingo.Config exposing (Config)
 import Bingo.Editor.ImportOverlay as ImportOverlay exposing (ImportOverlay)
 import Bingo.Editor.Messages exposing (..)
 import Bingo.Editor.Model exposing (..)
 import Bingo.Editor.ValueList as ValueList
-import Bingo.Errors as Errors exposing (Errors)
 import Bingo.Icon as Icon
 import Bingo.Messages as Messages
 import Bingo.Model exposing (..)
@@ -25,9 +22,7 @@ import Bingo.Page as Page exposing (Page)
 import Bingo.Save as Save
 import Bingo.ShortUrl as ShortUrl exposing (ShortUrl)
 import Bingo.Utils as Utils
-import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
 import Browser.Dom as Dom
-import Browser.Navigation as Navigation
 import Color exposing (Color)
 import Color.Hex as Color
 import Html exposing (Html)
@@ -36,30 +31,28 @@ import Html.Events as Html
 import Html5.DragDrop as DragDrop
 import Random
 import Random.List
-import Svg exposing (Svg)
-import Svg.Attributes as Svg
 import Task
 
 
-init : Code.Out msg -> TextBox.TextBoxesOut msg -> ( Editor, Cmd msg )
-init codeOut textBoxesOut =
+init : ( Editor, Cmd msg )
+init =
     let
         editor =
             emptyEditor
     in
-    ( editor, Card.onCardChange codeOut textBoxesOut (Page.Edit editor.card) )
+    ( editor, Card.onCardChange (Page.Edit editor.card) )
 
 
-load : Code.Out msg -> TextBox.TextBoxesOut msg -> Card -> ( Editor, Cmd msg )
-load codeOut textBoxesOut card =
-    ( emptyEditorWithCard card, Card.onCardLoad textBoxesOut (Page.Edit card) )
+load : Card -> ( Editor, Cmd msg )
+load card =
+    ( emptyEditorWithCard card, Card.onCardLoad (Page.Edit card) )
 
 
-update : Save.Out Msg -> Code.Out Msg -> TextBox.TextBoxesOut Msg -> Navigation.Key -> Config -> BaseUrl -> Maybe Page.Reference -> Msg -> Editor -> ( Editor, Messages.Back, Cmd Msg )
-update saveOut codeOut textBoxesOut key config baseUrl reference msg model =
+update : Config -> BaseUrl -> Maybe Page.Reference -> Msg -> Editor -> ( Editor, Messages.Back, Cmd Msg )
+update config baseUrl reference msg model =
     let
         ( editor, backMessage, cmd ) =
-            internalUpdate saveOut key config baseUrl reference msg model
+            internalUpdate config baseUrl reference msg model
 
         card =
             editor.card
@@ -67,7 +60,7 @@ update saveOut codeOut textBoxesOut key config baseUrl reference msg model =
         ( newEditor, commands ) =
             if card /= model.card then
                 ( { editor | editShortUrl = ShortUrl.Unknown, viewShortUrl = ShortUrl.Unknown }
-                , Cmd.batch [ cmd, Card.onCardChange codeOut textBoxesOut (Page.Edit card) ]
+                , Cmd.batch [ cmd, Card.onCardChange (Page.Edit card) ]
                 )
 
             else
@@ -194,8 +187,8 @@ emptyEditorWithCard card =
     }
 
 
-internalUpdate : Save.Out Msg -> Navigation.Key -> Config -> BaseUrl -> Maybe Page.Reference -> Msg -> Editor -> ( Editor, Messages.Back, Cmd Msg )
-internalUpdate saveOut key config baseUrl reference msg model =
+internalUpdate : Config -> BaseUrl -> Maybe Page.Reference -> Msg -> Editor -> ( Editor, Messages.Back, Cmd Msg )
+internalUpdate config baseUrl reference msg model =
     case msg of
         AddNewValue ->
             ( { model
@@ -259,7 +252,7 @@ internalUpdate saveOut key config baseUrl reference msg model =
             ( { model | card = Card.setValues values model.card }, Messages.NoBackMessage, Cmd.none )
 
         Save ->
-            ( model, Messages.NoBackMessage, Save.save saveOut model.card.name )
+            ( model, Messages.NoBackMessage, Save.save model.card.name )
 
         Shorten target ->
             case config.urlShortener of
@@ -314,7 +307,7 @@ internalUpdate saveOut key config baseUrl reference msg model =
 
                 card =
                     case result of
-                        Just ( dragged, dropTarget, position ) ->
+                        Just ( dragged, dropTarget, _ ) ->
                             case dropTarget of
                                 ValueTarget drop ->
                                     Card.swap dragged drop model.card
@@ -348,9 +341,6 @@ internalUpdate saveOut key config baseUrl reference msg model =
 
                 details =
                     colorInputDetails target
-
-                inputModel =
-                    details.getString model
 
                 updatedCardModel =
                     { model | card = setColorInCard details color model.card }
@@ -423,20 +413,17 @@ settings editor =
             [ changeNameControl card.name
             , changeSizeControl card.layout
             , freeSquareControl card.layout
-            , colorPickerWidget titleColorInput card.style editor
-            , colorPickerWidget backgroundColorInput card.style editor
+            , colorPickerWidget titleColorInput editor
+            , colorPickerWidget backgroundColorInput editor
             ]
         ]
 
 
-colorPickerWidget : ColorInputDetails -> Maybe Style -> Editor -> Html Msg
-colorPickerWidget details style editor =
+colorPickerWidget : ColorInputDetails -> Editor -> Html Msg
+colorPickerWidget details editor =
     let
         id =
             (details.name |> String.toLower) ++ "field"
-
-        color =
-            details.getColor style
 
         model =
             details.getString editor

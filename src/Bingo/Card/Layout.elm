@@ -5,7 +5,6 @@ module Bingo.Card.Layout exposing
     , freeSquareUsed
     , freeSquareValid
     , gridSpace
-    , gridStyles
     , headerSpace
     , padding
     , pos
@@ -17,8 +16,6 @@ module Bingo.Card.Layout exposing
     )
 
 import Bingo.Utils as Utils
-import Html
-import Html.Attributes as Html
 
 
 type alias Layout =
@@ -35,20 +32,6 @@ resize size layout =
 toggleFreeSquare : Layout -> Layout
 toggleFreeSquare layout =
     { layout | free = not layout.free }
-
-
-gridStyles : Layout -> List (Html.Attribute msg)
-gridStyles layout =
-    let
-        size =
-            String.fromInt layout.size
-
-        template =
-            "repeat(" ++ size ++ ", 1fr)"
-    in
-    [ Html.style "grid-template-columns" template
-    , Html.style "grid-template-rows" template
-    ]
 
 
 amountOfValues : Layout -> Int

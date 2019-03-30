@@ -23,7 +23,6 @@ import Bingo.Card.Model as Card exposing (Card)
 import Bingo.Utils as Utils
 import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
 import Json.Decode as Json
-import Json.Encode
 import Url exposing (Url)
 import Url.Builder
 
@@ -53,25 +52,25 @@ type Page
 {-| This subscription allows you to listen for responses from the port with
 the result of your requests.
 -}
-subscriptions : Code.In -> Sub Msg
-subscriptions inPort =
-    Code.subscriptions inPort |> Sub.map inboundCode
+subscriptions : Sub Msg
+subscriptions =
+    Code.subscriptions |> Sub.map inboundCode
 
 
 {-| Save a card to a compressed code. Takes the port for doing this as the
 first argument. Will result in a Saved or Error message.
 -}
-save : Code.Out msg -> Page -> Cmd msg
-save outPort page =
-    Code.encode outPort (card page) (pageSideCar page)
+save : Page -> Cmd msg
+save page =
+    Code.encode (card page) (pageSideCar page)
 
 
 {-| Load a card from a reference. Takes the port for doing this as the
 first argument. Will result in a Loaded or Error message.
 -}
-load : Code.Out msg -> Reference -> Cmd msg
-load outPort reference =
-    Code.decode outPort (code reference) (referenceSideCar reference)
+load : Reference -> Cmd msg
+load reference =
+    Code.decode (code reference) (referenceSideCar reference)
 
 
 {-| Generate a relative URL for a reference.

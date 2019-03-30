@@ -5,9 +5,9 @@ module Bingo.Editor.Model exposing
     )
 
 import Bingo.Card.Model exposing (Card)
-import Bingo.Editor.ImportOverlay as ImportOverlay exposing (ImportOverlay)
+import Bingo.Editor.ImportOverlay exposing (ImportOverlay)
 import Bingo.Model exposing (..)
-import Bingo.ShortUrl as ShortUrl exposing (ShortUrl)
+import Bingo.ShortUrl exposing (ShortUrl)
 import Html5.DragDrop as DragDrop
 
 

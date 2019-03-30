@@ -1,7 +1,6 @@
 module Bingo.Messages exposing (Back(..), Msg(..))
 
-import Bingo.Card.Code as Code
-import Bingo.Config as Config exposing (Config)
+import Bingo.Config exposing (Config)
 import Bingo.Editor.Messages as Editor
 import Bingo.Errors as Errors
 import Bingo.Page as Page

@@ -1,46 +1,21 @@
-port module Main exposing (main)
+module Main exposing (main)
 
-import Bingo.BaseUrl as BaseUrl exposing (BaseUrl)
-import Bingo.Card as Card
-import Bingo.Card.Code as Code
-import Bingo.Card.Model exposing (..)
-import Bingo.Card.TextBox as TextBox
+import Bingo.BaseUrl exposing (BaseUrl)
 import Bingo.Config as Config exposing (Config)
 import Bingo.Editor as Editor
-import Bingo.Editor.Messages as Editor
 import Bingo.Editor.Model exposing (Editor)
 import Bingo.Errors as Errors exposing (Errors)
 import Bingo.Messages exposing (..)
 import Bingo.Page as Page exposing (Page)
-import Bingo.Save as Save
 import Bingo.Utils as Utils
 import Bingo.Viewer as Viewer
 import Bingo.Viewer.Messages as Viewer
 import Bingo.Viewer.Model exposing (Viewer)
 import Browser
 import Browser.Navigation as Navigation
-import Debug
 import Html exposing (Html)
-import Html.Attributes as Attr
-import Html5.DragDrop as DragDrop
-import Http
 import Json.Encode as Json
 import Url exposing (Url)
-import Url.Builder
-
-
-port codeOut : Code.Out msg
-
-
-{-| Code.In, but ports don't like that.
--}
-port codeIn : (Json.Value -> msg) -> Sub msg
-
-
-port saveOut : Save.Out msg
-
-
-port textBoxesOut : TextBox.TextBoxesOut msg
 
 
 type PageModel
@@ -83,7 +58,7 @@ init flags url key =
                 _ ->
                     let
                         ( editor, editorCmd ) =
-                            Editor.init codeOut textBoxesOut
+                            Editor.init
                     in
                     ( E editor, editorCmd )
 
@@ -131,8 +106,8 @@ init flags url key =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    Page.subscriptions codeIn |> Sub.map PageMsg
+subscriptions _ =
+    Page.subscriptions |> Sub.map PageMsg
 
 
 onUrlRequest : Browser.UrlRequest -> Msg
@@ -151,7 +126,7 @@ update msg model =
         EditMsg msgEditor ->
             case model.page of
                 E editor ->
-                    case Editor.update saveOut codeOut textBoxesOut model.key model.config model.baseUrl model.reference msgEditor editor of
+                    case Editor.update model.config model.baseUrl model.reference msgEditor editor of
                         ( newEditor, backMessage, editorMsg ) ->
                             let
                                 errors =
@@ -169,16 +144,16 @@ update msg model =
                             , Cmd.map EditMsg editorMsg
                             )
 
-                V viewer ->
+                V _ ->
                     ( model, Cmd.none )
 
         ViewMsg msgViewer ->
             case model.page of
-                E editor ->
+                E _ ->
                     ( model, Cmd.none )
 
                 V viewer ->
-                    Viewer.update saveOut codeOut textBoxesOut model.key msgViewer viewer |> fromViewer model
+                    Viewer.update msgViewer viewer |> fromViewer model
 
         UrlChange url ->
             onChangeUrl url model
@@ -270,13 +245,13 @@ onChangeUrl url oldModel =
     case reference of
         Just code ->
             if oldModel.reference /= reference then
-                ( model, Page.load codeOut code )
+                ( model, Page.load code )
 
             else
                 ( model, Cmd.none )
 
         Nothing ->
-            case Editor.init codeOut textBoxesOut of
+            case Editor.init of
                 ( editor, editorMsg ) ->
                     ( { model | page = E editor }
                     , Cmd.map EditMsg editorMsg
@@ -300,14 +275,14 @@ load pageRequest =
         Page.Edit card ->
             let
                 ( editor, cmd ) =
-                    Editor.load codeOut textBoxesOut card
+                    Editor.load card
             in
             ( E editor, cmd )
 
         Page.View stampedCard ->
             let
                 ( viewer, cmd ) =
-                    Viewer.load codeOut textBoxesOut stampedCard
+                    Viewer.load stampedCard
             in
             ( V viewer, cmd |> Cmd.map ViewMsg )
 

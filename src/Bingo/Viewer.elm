@@ -5,21 +5,16 @@ module Bingo.Viewer exposing
     )
 
 import Bingo.Card as Card
-import Bingo.Card.Code as Code
 import Bingo.Card.Layout as Layout
 import Bingo.Card.Model as Card exposing (Card)
-import Bingo.Card.TextBox as TextBox
 import Bingo.Card.View as Card
 import Bingo.Icon as Icon
 import Bingo.Page as Page exposing (Page)
 import Bingo.Save as Save
-import Bingo.Utils as Utils
 import Bingo.Viewer.Messages exposing (..)
 import Bingo.Viewer.Model exposing (..)
 import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
-import Browser.Navigation as Navigation
 import Color.Hex as Color
-import Color.Manipulate as Color
 import Html exposing (Html)
 import Html.Attributes as HtmlA
 import Html.Events as HtmlE
@@ -28,8 +23,8 @@ import Svg exposing (Svg)
 import Svg.Attributes as SvgA
 
 
-load : Code.Out Msg -> TextBox.TextBoxesOut Msg -> Card.Stamped -> ( Viewer, Cmd Msg )
-load codeOut textBoxesOut card =
+load : Card.Stamped -> ( Viewer, Cmd Msg )
+load card =
     let
         squares =
             Layout.amountOfSquares card.card.layout
@@ -39,7 +34,7 @@ load codeOut textBoxesOut card =
       }
     , Cmd.batch
         [ generateRandomRotations squares
-        , Card.onCardLoad textBoxesOut (Page.View card)
+        , Card.onCardLoad (Page.View card)
         ]
     )
 
@@ -65,18 +60,18 @@ view reference model =
         ]
 
 
-update : Save.Out Msg -> Code.Out Msg -> TextBox.TextBoxesOut Msg -> Navigation.Key -> Msg -> Viewer -> ( Viewer, Cmd Msg )
-update saveOut codeOut textBoxesOut key msg model =
+update : Msg -> Viewer -> ( Viewer, Cmd Msg )
+update msg model =
     let
         ( viewer, cmd ) =
-            internalUpdate saveOut key msg model
+            internalUpdate msg model
 
         stampedCard =
             viewer.stampedCard
 
         commands =
             if stampedCard /= model.stampedCard then
-                Cmd.batch [ cmd, Card.onCardChange codeOut textBoxesOut (Page.View stampedCard) ]
+                Cmd.batch [ cmd, Card.onCardChange (Page.View stampedCard) ]
 
             else
                 cmd
@@ -88,8 +83,8 @@ update saveOut codeOut textBoxesOut key msg model =
 {- Private -}
 
 
-internalUpdate : Save.Out Msg -> Navigation.Key -> Msg -> Viewer -> ( Viewer, Cmd Msg )
-internalUpdate saveOut key msg model =
+internalUpdate : Msg -> Viewer -> ( Viewer, Cmd Msg )
+internalUpdate msg model =
     case msg of
         Rotations rotations ->
             ( { model | rotations = rotations }, Cmd.none )
@@ -105,11 +100,11 @@ internalUpdate saveOut key msg model =
             ( { model | stampedCard = updatedCard }, Cmd.none )
 
         Save ->
-            ( model, Save.save saveOut model.stampedCard.card.name )
+            ( model, Save.save model.stampedCard.card.name )
 
 
 clickHandler : Int -> Card.Square -> List (Svg.Attribute Msg)
-clickHandler index value =
+clickHandler index _ =
     [ HtmlE.onClick (ToggleStamp index) ]
 
 
@@ -212,11 +207,11 @@ rowStamps spacePerSquare index members =
             Layout.pos index spacePerSquare + (0.5 * spacePerSquare)
     in
     Svg.g [ SvgA.transform ("translate (0 " ++ String.fromFloat y ++ ")") ]
-        (List.indexedMap (stamp y spacePerSquare) members |> List.concat)
+        (List.indexedMap (stamp spacePerSquare) members |> List.concat)
 
 
-stamp : Float -> Float -> Int -> ( Rotation, Bool ) -> List (Svg msg)
-stamp y spacePerSquare column rotationExists =
+stamp : Float -> Int -> ( Rotation, Bool ) -> List (Svg msg)
+stamp spacePerSquare column rotationExists =
     let
         ( rotation, exists ) =
             rotationExists

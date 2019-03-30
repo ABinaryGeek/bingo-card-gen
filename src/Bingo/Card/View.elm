@@ -3,16 +3,11 @@ module Bingo.Card.View exposing
     , viewWithOverlay
     )
 
-import Bingo.Card as Card
 import Bingo.Card.Layout as Layout exposing (Layout)
 import Bingo.Card.Model exposing (..)
 import Bingo.Card.Square as Square
-import Bingo.Editor.Messages
-import Bingo.Model as Model exposing (Value)
-import Bingo.Utils as Utils
 import Color.Hex as Color
 import Html exposing (Html)
-import Html.Attributes as Html
 import Svg exposing (Svg)
 import Svg.Attributes as SvgA
 
@@ -23,7 +18,7 @@ type alias AttributeInjector msg =
 
 view : Card -> Html msg
 view card =
-    viewWithOverlay [] (\i -> \s -> []) card
+    viewWithOverlay [] (\_ -> \_ -> []) card
 
 
 viewWithOverlay : List (Svg msg) -> AttributeInjector msg -> Card -> Html msg
@@ -52,7 +47,7 @@ viewWithOverlay overlay attributeInjector card =
         , SvgA.viewBox ("0 0 " ++ String.fromFloat width ++ " " ++ String.fromFloat height)
         , SvgA.preserveAspectRatio "xMidYMid meet"
         ]
-        ([ defs spacePerSquare size
+        ([ defs spacePerSquare
          , Svg.rect
             ([ SvgA.class "background"
              , "fill:" ++ (Color.toHex style.background |> .hex) ++ ";" |> SvgA.style
@@ -82,8 +77,8 @@ viewWithOverlay overlay attributeInjector card =
 {- Private -}
 
 
-defs : Float -> Int -> Svg msg
-defs spacePerSquare size =
+defs : Float -> Svg msg
+defs spacePerSquare =
     Svg.defs []
         [ squareDef spacePerSquare
         ]

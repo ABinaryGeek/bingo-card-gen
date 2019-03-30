@@ -1,13 +1,9 @@
-module Bingo.Save exposing
-    ( Out
-    , save
-    )
+port module Bingo.Save exposing (save)
 
 
-type alias Out msg =
-    String -> Cmd msg
+port saveOut : String -> Cmd msg
 
 
-save : Out msg -> String -> Cmd msg
-save outPort name =
-    outPort name
+save : String -> Cmd msg
+save name =
+    saveOut name

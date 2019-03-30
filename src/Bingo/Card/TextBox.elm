@@ -1,4 +1,4 @@
-module Bingo.Card.TextBox exposing (TextBoxesOut, render)
+port module Bingo.Card.TextBox exposing (render)
 
 import Bingo.Card.Layout as Layout exposing (Layout)
 import Bingo.Card.Model exposing (..)
@@ -7,17 +7,16 @@ import Bingo.Model exposing (Value)
 import Json.Encode as Json
 
 
-{-| The type of the outbound port required.
+{-| The port for text boxes.
 -}
-type alias TextBoxesOut msg =
-    Json.Value -> Cmd msg
+port textBoxesOut : Json.Value -> Cmd msg
 
 
-{-| Send a message to the prot to render the appropriate text boxes for the
+{-| Send a message to the page to render the appropriate text boxes for the
 card.
 -}
-render : TextBoxesOut msg -> Card -> Cmd msg
-render textBoxesOut card =
+render : Card -> Cmd msg
+render card =
     encode card |> textBoxesOut
 
 

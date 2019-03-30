@@ -2,9 +2,8 @@ module Bingo.Card.Model exposing (Card, Square(..), Stamped, Style, defaultStyle
 
 import Bingo.Card.Layout exposing (Layout)
 import Bingo.Model exposing (Value)
-import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
+import Bingo.Viewer.Stamps exposing (Stamps)
 import Color exposing (Color)
-import Color.Hex as Color
 
 
 type alias Card =

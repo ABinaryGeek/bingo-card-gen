@@ -13,14 +13,12 @@ module Bingo.Card exposing
     , toggleFreeSquare
     )
 
-import Bingo.Card.Code as Code
 import Bingo.Card.Layout as Layout exposing (Layout)
 import Bingo.Card.Model exposing (..)
 import Bingo.Card.TextBox as TextBox
 import Bingo.Model exposing (..)
 import Bingo.Page as Pages
 import Bingo.Utils as Utils
-import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
 import List.Extra as List
 
 
@@ -36,16 +34,16 @@ init =
     }
 
 
-onCardLoad : TextBox.TextBoxesOut msg -> Pages.Page -> Cmd msg
-onCardLoad textBoxesOut page =
-    TextBox.render textBoxesOut (Pages.card page)
+onCardLoad : Pages.Page -> Cmd msg
+onCardLoad page =
+    TextBox.render (Pages.card page)
 
 
-onCardChange : Code.Out msg -> TextBox.TextBoxesOut msg -> Pages.Page -> Cmd msg
-onCardChange codeOut textBoxesOut page =
+onCardChange : Pages.Page -> Cmd msg
+onCardChange page =
     Cmd.batch
-        [ onCardLoad textBoxesOut page
-        , Pages.save codeOut page
+        [ onCardLoad page
+        , Pages.save page
         ]
 
 

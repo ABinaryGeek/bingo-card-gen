@@ -2,18 +2,13 @@ module Bingo.Utils exposing
     ( bounded
     , flattenResult
     , httpErrorToString
-    , nonEmptyList
     , partition
-    , resultTask
     , singletonOrEmpty
     , split
     , swap
     )
 
-import Html exposing (Html)
 import Http
-import Random
-import Task exposing (Task)
 
 
 bounded : Int -> Int -> Int -> Int
@@ -49,16 +44,6 @@ swap this that values =
         values
 
 
-resultTask : Result x a -> Task x a
-resultTask result =
-    case result of
-        Ok a ->
-            Task.succeed a
-
-        Err x ->
-            Task.fail x
-
-
 singletonOrEmpty : Maybe a -> List a
 singletonOrEmpty maybe =
     case maybe of
@@ -67,16 +52,6 @@ singletonOrEmpty maybe =
 
         Nothing ->
             []
-
-
-nonEmptyList : List a -> Maybe ( a, List a )
-nonEmptyList list =
-    case list of
-        [] ->
-            Nothing
-
-        first :: rest ->
-            Just ( first, rest )
 
 
 partition : String -> String -> ( Maybe String, String )

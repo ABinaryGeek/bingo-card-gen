@@ -1,8 +1,6 @@
-module Bingo.Card.Code exposing
+port module Bingo.Card.Code exposing
     ( Compressed
-    , In
     , Msg(..)
-    , Out
     , decode
     , encode
     , processFlags
@@ -13,24 +11,20 @@ import Bingo.Card.Layout exposing (Layout)
 import Bingo.Card.Model exposing (..)
 import Bingo.Model exposing (Value)
 import Bingo.Utils as Utils
-import Bingo.Viewer.Stamps as Stamps exposing (Stamps)
 import Color exposing (Color)
 import Color.Hex as Color
 import Json.Decode as Json
 import Json.Encode
-import Url.Builder
 
 
 {-| The type of the inbound port required.
 -}
-type alias In =
-    (Json.Value -> Msg) -> Sub Msg
+port codeIn : (Json.Value -> msg) -> Sub msg
 
 
 {-| The type of the outbound port required.
 -}
-type alias Out msg =
-    Json.Value -> Cmd msg
+port codeOut : Json.Value -> Cmd msg
 
 
 {-| Messages as a result of encode/decode commands.
@@ -50,23 +44,23 @@ type alias Compressed =
 {-| This subscription allows you to listen for responses from the port with
 the result of your requests.
 -}
-subscriptions : In -> Sub Msg
-subscriptions inPort =
-    inPort (decodeCode >> inboundCode)
+subscriptions : Sub Msg
+subscriptions =
+    codeIn (decodeCode >> inboundCode)
 
 
 {-| Encode a card, with some extra information to go with/identify the code when it is returned.
 -}
-encode : Out msg -> Card -> Maybe Json.Value -> Cmd msg
-encode outPort card sideCar =
-    RawCode (toCode card) sideCar |> encodeCode |> outPort
+encode : Card -> Maybe Json.Value -> Cmd msg
+encode card sideCar =
+    RawCode (toCode card) sideCar |> encodeCode |> codeOut
 
 
 {-| Decode a card, with any extra information to go with/identify the card when it is returned.
 -}
-decode : Out msg -> Compressed -> Maybe Json.Value -> Cmd msg
-decode outPort code sideCar =
-    CompressedCode code sideCar |> encodeCode |> outPort
+decode : Compressed -> Maybe Json.Value -> Cmd msg
+decode code sideCar =
+    CompressedCode code sideCar |> encodeCode |> codeOut
 
 
 {-| Process some data as though it were a subscription, useful for flags.

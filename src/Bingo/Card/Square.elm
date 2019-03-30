@@ -12,7 +12,7 @@ squares layout values =
         amount =
             Layout.amountOfValues layout
 
-        ( used, unused ) =
+        ( used, _ ) =
             Utils.split amount values
 
         actualAmount =

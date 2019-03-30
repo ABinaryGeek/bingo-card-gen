@@ -135,15 +135,15 @@ view attributes card drag =
         , Html.p [] [ Html.text "You can drag a value to another to swap squares or to the bottom to delete them." ]
         , Html.form
             [ Attr.class "pure-form pure-form-stacked", Html.onSubmit NoOp ]
-            [ randomiseOrder card.values
+            [ randomiseOrder
             ]
         , valueList
         , binView drag
         ]
 
 
-randomiseOrder : List Value -> Html Msg
-randomiseOrder values =
+randomiseOrder : Html Msg
+randomiseOrder =
     Html.div [ Attr.class "pure-controls" ]
         [ Html.label [ Attr.for "add-value-field" ] [ Html.text "Shuffle:" ]
         , Html.div [ Attr.class "form-row" ]
@@ -186,18 +186,6 @@ valueListItem attributes drag used value =
             [ Html.text value ]
         ]
     )
-
-
-usedClass : Bool -> Html.Attribute msg
-usedClass used =
-    Attr.class
-        (case used of
-            True ->
-                "used"
-
-            False ->
-                "unused"
-        )
 
 
 binView : Maybe Drag -> Html Msg

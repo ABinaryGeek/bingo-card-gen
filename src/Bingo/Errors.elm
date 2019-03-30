@@ -35,7 +35,7 @@ init =
 
 
 update : Msg -> Errors -> Errors
-update msg model =
+update msg _ =
     case msg of
         ClearErrors ->
             []
